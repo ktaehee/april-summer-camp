@@ -12,7 +12,7 @@
 |---|---|
 | 🌐 라이브 URL | **https://april-summer-camp.vercel.app** |
 | 📂 로컬 경로 | `C:\Users\Home7800\Projects\april-summer-camp` |
-| 🐙 GitHub | (push 후 채워질 예정) `https://github.com/ktaehee/april-summer-camp` |
+| 🐙 GitHub | https://github.com/ktaehee/april-summer-camp |
 | ☁️ 호스팅 | Vercel (계정: `ktaehee2-2159`) |
 | 🛠 스택 | Vite 6 + React 18 + Tailwind 3 |
 | 💾 DB | **없음** — 신청은 `mailto:` 링크로 이메일 발송 |
