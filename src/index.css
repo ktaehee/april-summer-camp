@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-april-cream text-april-navy antialiased;
+    font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .bg-leaf-pattern {
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(157, 205, 59, 0.12) 0, transparent 35%),
+      radial-gradient(circle at 80% 10%, rgba(255, 216, 77, 0.15) 0, transparent 30%),
+      radial-gradient(circle at 60% 90%, rgba(157, 205, 59, 0.10) 0, transparent 35%);
+  }
+}
