@@ -1,81 +1,171 @@
 import { useState } from 'react'
 
+// ─────────────────────────────────────────────────────────────
+// 📌 신청 폼 → 구글 시트 자동 입력 설정
+// 「2026 여름 캠프 등록(직원)」 탭에 자동으로 들어오게 하려면,
+// Google Apps Script 웹앱을 배포한 뒤 발급된 URL을 아래 따옴표 안에 붙여넣으세요.
+// (배포 방법은 apps-script/README.md 참고)
+// 비워두면('') 제출 시 이메일 작성 창이 열리는 방식으로 동작합니다.
+const SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwhGykzCpdbd_MQ_wZvcVAqbAjpyBgDIAMSCHeWyP7Brw2HeHcC7nahMJlKci8ILeUrGA/exec'
+// 재원생 레벨 선택 옵션
+const ENROLLED_LEVELS = [
+  'Seedbed Alpha', 'Seed 1', 'Seed 2',
+  'Sprout 1', 'Sprout 2', 'Sprout 3',
+  'Sapling 1', 'Sapling 2', 'JM1', 'JM2',
+]
+
 const CAMP_INFO = {
   title: '2026 여름 캠프',
   subtitle: '청담에이프릴 마포상암캠퍼스 Summer Camp',
   campus: '청담에이프릴 마포상암캠퍼스',
   tagline: '2주 몰입 영어, 알찬 여름의 시작',
   dates: '2026년 8월 3일(월) ~ 8월 14일(금) · 총 10회',
-  hours: '평일 09:00 ~ 14:30 (총 55시간)',
+  hours: '평일 09:00 ~ 14:20 (총 55시간)',
   arrival: '등원 08:00부터 가능',
-  transport: '등원 — 개인 / 하원 — 차량 배정',
-  target: '초등 학생 (레벨테스트 후 반 배정)',
-  capacity: '레벨별 소수 정예반',
-  applyDeadline: '2026년 7월 24일(금)까지 (최종 마감)',
-  earlyBirdDeadline: '2026년 6월 26일(금)까지 (1차 마감)',
+  transport: '등원 — 개인 등원만 / 하원 — 차량 배정',
+  target: '유아 ~ 초등 (레벨테스트 후 반 배정)',
+  capacity: '반별 정원 12명 (소수 정예)',
+  earlyBirdDeadline: '2026년 6월 30일(화)까지 (1차 마감 · 얼리버드 할인 마감)',
+  applyDeadline: '2026년 7월 15일(수)까지 (2차 마감 / 7월 11일부터 환불 불가 · 환불 정책 참고)',
+  shuttleArea:
+    '성산동 · 중동 · 서교동 · 동교동 · 망원동 · 연남동 · 상암동 · 덕은동 · 증산동 · 수색동 · 남가좌동 · 북가좌동 · 가재울 · 합정동',
   phone: '02-333-5620',
   email: 'sangam@april.creverse.com',
-  address: '서울시 마포구 상암동 DMC 인근',
-  blogUrl: 'https://blog.naver.com/aprilsangam/224119991638',
+  address: '서울시 마포구 월드컵북로 99, 3F',
+  mapUrl: 'https://map.naver.com/p/search/' + encodeURIComponent('에이프릴어학원 마포상암캠퍼스'),
+  blogUrl: 'https://blog.naver.com/aprilsangam/224291533846',
   includes: '수업비 · 식비 · 간식비 · 교재비 · 활동비 · 재료비 · 하원 차량비',
 }
 
-const LEVELS = [
+// 캠프는 영어 레벨에 따라 7단계로 나뉘며, 4개 그룹으로 묶어 운영합니다.
+const LEVEL_GROUPS = [
   {
-    badge: 'Sprout',
-    name: '새싹반',
+    group: 'Group 1',
+    name: '입문',
     icon: '🌱',
-    internal: 'Seedbed · Seed',
-    target: '영어 입문 ~ 기초',
+    target: '파닉스 ~ 영어 입문',
     color: 'from-april-lime-soft to-april-cream',
     accent: 'bg-april-lime',
     accentText: 'text-white',
-    points: [
-      'Phonics 집중 — 알파벳·음가 완성',
-      '핵심 단어 200+ 노래·챈트로 익히기',
-      '원어민 1:1 발음 코칭',
+    levels: [
+      { name: 'Rookie', internal: 'Phonics Starter' },
+      { name: 'Basic', internal: 'Seedbed Alpha' },
     ],
   },
   {
-    badge: 'Bloom',
-    name: '개화반',
+    group: 'Group 2',
+    name: '중급',
     icon: '🌿',
-    internal: 'Seed · Sprout',
-    target: '문장 만들기 가능',
+    target: '문장 읽기 · 쓰기 가능',
     color: 'from-yellow-50 to-april-cream',
     accent: 'bg-april-sun',
     accentText: 'text-april-navy',
-    points: [
-      'Listening & Speaking 집중 향상',
-      'Storybook 8권 완독 + 독후 활동',
-      'Project: My Summer Diary 작성',
+    levels: [
+      { name: 'Intermediate A', internal: 'Seed 1' },
+      { name: 'Intermediate B', internal: 'Seed 2' },
     ],
   },
   {
-    badge: 'Harvest',
-    name: '열매반',
+    group: 'Group 3',
+    name: '심화',
     icon: '🌳',
-    internal: 'Sprout · Sap',
-    target: '챕터북 독해 가능',
+    target: '챕터북 독해 · 토론 가능',
     color: 'from-april-lime-soft to-yellow-50',
     accent: 'bg-april-navy',
     accentText: 'text-white',
-    points: [
-      'Reading Comprehension + Writing',
-      'AR 4.0 이상 챕터북 정독',
-      'TED-Style Presentation 2회 발표',
+    levels: [
+      { name: 'Advance', internal: 'Sprout 1~2' },
+      { name: 'Master', internal: 'Sprout 3 ~ Sapling 1' },
+    ],
+  },
+  {
+    group: 'Group 4',
+    name: '최상위',
+    icon: '🌲',
+    target: '원서 · 에세이 · 심화 토론',
+    color: 'from-april-cream to-april-lime-soft',
+    accent: 'bg-april-lime-dark',
+    accentText: 'text-white',
+    levels: [
+      { name: 'Ivy', internal: 'Sapling 2 ~ JM2' },
     ],
   },
 ]
 
-const SCHEDULE = [
-  { time: '08:00 — 09:00', activity: '등원 (개인 등원) · 자유 독서' },
-  { time: '09:00 — 10:30', activity: 'Core Class — 원어민 메인 수업' },
-  { time: '10:30 — 11:30', activity: 'Project Activity — 주제별 프로젝트' },
-  { time: '11:30 — 12:30', activity: '점심 식사' },
-  { time: '12:30 — 13:30', activity: 'Reading Lab — 영어 독서 클리닉' },
-  { time: '13:30 — 14:20', activity: 'Fun Activity · 발표' },
-  { time: '14:30 ~', activity: '하원 (셔틀 차량 배정)' },
+// 10일 데일리 테마 프로그램 (2026 최종 확정안)
+// tags: '전체 통합' · '레벨별 진행' · 'House 포인트' · '전체 관람'
+const PROGRAM_DAYS = [
+  { day: 1, date: '8/3 월', theme: 'Sorting Day', icon: '🏰', title: 'Opening + Sorting Hat', desc: '원어민 선생님 소개 · 하우스 배정(회장/부회장) · Stamp&House 제도 소개 · 기념 사진', tags: ['전체 통합'] },
+  { day: 2, date: '8/4 화', theme: 'Media Day', icon: '📰', title: 'Breaking News', desc: '취재 · 리포트 · 발표', tags: ['레벨별 진행'] },
+  { day: 3, date: '8/5 수', theme: 'Game Day', icon: '🎲', title: 'Board Game Cafe', desc: '영어 전용 토너먼트', tags: ['전체 통합', 'House 포인트'] },
+  { day: 4, date: '8/6 목', theme: 'Maker Day', icon: '🦈', title: 'T-shirt + Shark Tank', desc: '제작 → 브랜드 피칭', tags: ['레벨별 진행', 'House 포인트', '전체 통합'] },
+  { day: 5, date: '8/7 금', theme: 'Postcard Day', icon: '✉️', title: 'Postcard Art + Letter', desc: '엽서 · 가족 편지 · 타임캡슐', tags: ['레벨별 진행'] },
+  { day: 6, date: '8/10 월', theme: 'Adventure Day', icon: '🏃', title: 'Amazing Race', desc: '학원 전체 영어 미션 투어', tags: ['전체 통합', 'House 포인트'] },
+  { day: 7, date: '8/11 화', theme: 'Talent Day', icon: '🎤', title: "April's Got Talent", desc: '노래 · 댄스 등 장기자랑 무대', tags: ['전체 통합', 'House 포인트'] },
+  { day: 8, date: '8/12 수', theme: 'World Citizen Day', icon: '🌍', title: 'Mini UN', desc: '글로벌 이슈 · 토론 · 발표', tags: ['레벨별 진행'] },
+  { day: 9, date: '8/13 목', theme: 'Speaker Day', icon: '🎙️', title: 'TED-Style Talk', desc: '구조화 발표 · 논리적 설득', tags: ['레벨별 진행', '전체 관람'] },
+  { day: 10, date: '8/14 금', theme: 'Finale Day', icon: '🏆', title: 'Highlight Movie + 시상식 + Market Day', desc: 'House 챔피언 시상 · Market Day', tags: ['전체 통합'] },
+]
+
+// Activity (SEL Therapy) — Theme 외에 진행되는 마음·신체 활동 (Activity 30분)
+const ACTIVITY_THERAPY = [
+  {
+    icon: '🕊️',
+    name: 'Peace Corner 꾸미기',
+    theme: '우리만의 공간',
+    desc: "화나거나 힘들 때 혼자 마음을 가라앉히고 조용히 앉을 수 있는 '우리만의 안정 공간'을 함께 꾸밉니다. 테라피 음악 속에서 코너를 만들고 한 명씩 앉아 소감을 나눠요.",
+  },
+  {
+    icon: '🧰',
+    name: 'Calm Down Toolkit',
+    theme: '마음 진정 도구',
+    desc: "영화 'Sound of Music'의 My Favorite Things를 감상한 뒤, 나를 행복하게 하는 10가지를 적어보며 마음을 진정시키는 나만의 도구를 만듭니다.",
+  },
+  {
+    icon: '🕺',
+    name: 'Freeze Dance + Cup Stacking',
+    theme: '신체 활동',
+    desc: '음악이 멈추면 그 자리에서 얼음! Freeze Dance로 몸을 풀고, 영어로만 지시하며 컵을 높이 쌓는 Cup Stacking 협동 게임으로 에너지를 발산합니다.',
+  },
+  {
+    icon: '🎵',
+    name: 'My Emotion Playlist',
+    theme: '기분과 음악',
+    desc: '음악과 감정의 관계를 이야기하고, 각자 좋아하는 영어 노래를 영어로 소개하고 함께 들으며 마음에 드는 가사를 필사하고 따라 불러봅니다.',
+  },
+  {
+    icon: '💛',
+    name: 'Compliment Bomb',
+    theme: '친구 칭찬',
+    desc: '친구에게 칭찬 포스트잇을 써서 전하고, 나 자신에게도 셀프 칭찬 카드를 적어요. 칭찬의 힘과 자기 사랑을 함께 배우는 따뜻한 마무리 활동입니다.',
+  },
+  {
+    icon: '✉️',
+    name: 'Postcard Art + Letter',
+    theme: '엽서 아트 + 편지',
+    desc: '여름 감성의 엽서를 직접 꾸미고, 레벨별로 부모님에게 혹은 미래의 나에게 영어 편지를 씁니다.',
+  },
+  {
+    icon: '🎨',
+    name: '컬러링 (Coloring)',
+    theme: '감정 표현 · 힐링',
+    desc: '테라피 음악을 배경으로 꽃·엽서·동화 삽화 밑그림을 자유롭게 색칠하며 마음을 힐링하는 시간입니다.',
+  },
+]
+
+// 하루 시간표
+const TIMETABLE = [
+  { period: '등원', time: '08:00 ~ 08:50', activity: '등원 (개인 등원 / 자유 독서)' },
+  { period: 'Core Class', time: '09:00 ~ 09:50', activity: 'Reading' },
+  { period: 'Break Time', time: '09:50 ~ 10:00', activity: 'Break Time' },
+  { period: 'Core Class', time: '10:00 ~ 10:50', activity: 'Speaking / Listening' },
+  { period: 'Break Time', time: '10:50 ~ 11:00', activity: 'Break Time' },
+  { period: 'Core Class', time: '11:00 ~ 11:50', activity: 'Writing / Project' },
+  { period: 'Lunch Time', time: '11:50 ~ 12:50', activity: 'Lunch Time' },
+  { period: 'Theme Class', time: '12:50 ~ 13:30', activity: 'Theme Class (40분)', highlight: true },
+  { period: 'Activity', time: '13:30 ~ 14:00', activity: 'Activity (30분)', highlight: true },
+  { period: 'Wrap Up', time: '14:00 ~ 14:20', activity: 'Wrap Up' },
+  { period: '하원', time: '14:20 ~ 14:30', activity: '하원 준비 + 차량 안내' },
 ]
 
 const BASE_FEE = 1100000
@@ -89,58 +179,78 @@ const DISCOUNT_CONDITIONS = [
   { name: '형제·자매', detail: '함께 등록 시' },
   { name: '기존 캠프 등록자', detail: '이전 캠프 참여 경험' },
   { name: '친구 소개 (비재원생)', detail: '소개로 신규 등록' },
-  { name: '얼리버드', detail: '6/1 ~ 7/10' },
+  { name: '얼리버드', detail: '6/1 ~ 6/30 등록' },
 ]
 
 const ACTIVITIES = [
   {
-    icon: '🎨',
-    title: 'Describe to Create',
-    subtitle: '본 대로 그려라, 단 영어로',
-    desc: '선생님이 보여준 그림을 형용사·전치사·위치 표현을 총동원해 영어로 묘사하고, AI가 그 묘사대로 이미지를 재창조합니다. 표현이 정확할수록 똑같은 그림이 나오는 영어 실력 게임.',
-    skills: ['형용사', '전치사', '위치·순서 표현'],
+    icon: '🪄',
+    title: 'Sorting Hat — Harry Potter 테마',
+    subtitle: 'Sorting Day · 캠프 첫날 오프닝',
+    desc: 'HBO 드라마 리뉴얼 기념 및 다가오는 할로윈 파티에서도 유행할 Harry Potter 테마를 미리 여름 캠프에서 경험합니다! 첫날 하우스를 배정받고, 리더와 부리더를 정하고, 단합하여 팀 포인트를 쌓아가며, 캠프 2주 내내 하우스별로 협동심을 높입니다.',
+    skills: ['Role Play', 'Teamwork', 'House System'],
   },
   {
-    icon: '🛒',
-    title: 'Market Activity',
-    subtitle: '아이들이 직접 운영하는 영어 마켓',
-    desc: '가게 주인과 손님이 되어 메뉴를 정하고, 홍보 멘트를 영어로 작성합니다. 캠프 전용 화폐로 흥정하고 판매하는 전 과정이 영어로 진행 — 얻은 간식·상품은 진짜로 가져갑니다.',
-    skills: ['"How much is this?"', '"I want to buy…"', '"Can you give me a discount?"'],
+    icon: '📰',
+    title: 'Breaking News',
+    subtitle: 'Media Day · 우리가 기자다',
+    desc: '직접 기자가 되어 취재하고, 영어로 기사를 작성해 뉴스 리포트로 발표합니다. 레벨별로 나눠 취재부터 보도까지 한 흐름으로 진행해요.',
+    skills: ['Writing', 'Video', 'Presentation'],
+  },
+  {
+    icon: '🦈',
+    title: 'T-shirt + Shark Tank',
+    subtitle: 'Maker Day · 제작 → 브랜드 피칭',
+    desc: '나만의 티셔츠·굿즈를 디자인해 브랜드로 만들고, 투자자(Shark) 앞에서 영어로 피칭합니다. 만들기와 발표, 설득이 한 번에 이뤄지는 인기 액티비티.',
+    skills: ['Making', 'Creative', 'Presentation'],
+  },
+  {
+    icon: '🌍',
+    title: 'Mini UN',
+    subtitle: 'World Citizen Day · 모의 국제 의회',
+    desc: 'Mini UN은 글로벌 이슈에 대해 영어로 발언하는 모의 UN 회의입니다. 글로벌 시민의식과 의견 말하기 표현을 함께 배워 봅니다.',
+    skills: ['Debate', 'Role Play', 'Global'],
+  },
+  {
+    icon: '🎙️',
+    title: 'TED-Style Talk',
+    subtitle: 'Speaker Day · 파이널 프로젝트',
+    desc: '자유롭게 하나의 주제를 정해 Outline(서론/본론/결론)을 구성해 Article(글)을 쓰고, TED처럼 스피치(영상 촬영)를 해보는 여름 캠프의 핵심 능력(Writing/Speaking/Reading/Listening)이 유기적으로 하나로 연결되는 파이널 프로젝트입니다. 영상 촬영 결과물은 부모님께 전달됩니다.',
+    skills: ['Writing', 'Speaking', 'Reading', 'Listening'],
   },
   {
     icon: '💌',
     title: 'Letter to Parents',
     subtitle: '부모님께 영어로 마음 전하기',
-    desc: '부모님께 감사하는 마음을 영어로 영작합니다. 다음날 Script Creation의 준비 시간이기도 해요. 원어민 선생님과 함께 영작하며 쓰기 → 말하기 → 발표로 이어지는 연계 수업.',
+    desc: '레벨별로 부모님에게 감사의 편지를 쓰거나 미래의 나에게 영어 편지를 씁니다.',
     skills: ['Writing', '감정 표현', '문장 구성'],
   },
   {
-    icon: '✍️',
-    title: 'Script Creation',
-    subtitle: '내가 쓴 영어로 유튜브 촬영',
-    desc: '어제 작성한 편지를 바탕으로 영어 발표를 한 뒤 유튜브 영상으로 촬영합니다. 영상 공개를 동의하지 않으셔도, 잘 편집된 영상을 부모님께 따로 전달드려요.',
-    skills: ['Speaking', 'Presentation', '발음 코칭'],
-  },
-  {
-    icon: '🧟',
-    title: 'Blindfold Zombie Game',
-    subtitle: '눈 가리고 영어로만 움직여라',
-    desc: '눈을 가린 친구를 오직 영어로만 안내해 다른 친구를 잡는 액티비티. 안전을 위해 핸드폰 카메라 안에 들어가면 아웃되는 방식으로 운영 — 아이들이 가장 많이 웃고, 가장 많이 말하는 시간입니다.',
-    skills: ['"Go straight"', '"Turn left"', '"3 steps forward!"'],
+    icon: '🏆',
+    title: 'Finale — Highlight & Market Day',
+    subtitle: 'Finale Day · 시상식 + 마켓',
+    desc: '2주간의 하이라이트 영상 상영과 하우스 챔피언 시상식, 그리고 영어로 사고파는 Market Day로 캠프를 마무리합니다. 가장 신나는 축제의 날!',
+    skills: ['Teamwork', 'Speaking', 'Celebration'],
   },
 ]
 
 const REFUND_POLICY = [
-  { date: '~ 6/26 (1차 마감)', rate: '전액 환불', tone: 'good' },
-  { date: '6/27 ~ 7/3', rate: '10% 차감 후 환불', tone: 'mid' },
-  { date: '7/4 ~ 7/10', rate: '20% 차감 후 환불', tone: 'mid' },
+  { date: '~ 6/30 (1차 마감)', rate: '전액 환불', tone: 'good' },
+  { date: '7/1 ~ 7/5', rate: '10% 차감 후 환불', tone: 'mid' },
+  { date: '7/6 ~ 7/10', rate: '20% 차감 후 환불', tone: 'mid' },
   { date: '7/11 ~', rate: '환불 불가', tone: 'bad' },
+]
+
+// 등록 일정
+const APPLY_SCHEDULE = [
+  { date: '~ 6/30', label: '1차 신청 마감', detail: '얼리버드 할인 · 캠프 비용 전액 환불 가능', tone: 'good' },
+  { date: '~ 7/15', label: '2차 신청 마감', detail: '7/11 이후 환불 불가 (환불 정책 참고)', tone: 'mid' },
 ]
 
 const FAQS = [
   {
     q: '비재원생도 신청 가능한가요?',
-    a: '네! 외부생도 환영합니다. 신청 시 무료 레벨테스트를 진행한 뒤 가장 잘 맞는 반에 배정해 드립니다. 친구 소개로 등록 시 30% 할인 혜택도 적용돼요.',
+    a: '네! 비재원생도 환영합니다. 신청 시 무료 레벨테스트를 진행한 뒤 가장 잘 맞는 반에 배정해 드립니다.(전화 신청 문의 바람) 친구 소개로 등록 시 10% 할인 혜택 적용돼요.',
   },
   {
     q: '등·하원 차량은 어떻게 운영되나요?',
@@ -152,15 +262,19 @@ const FAQS = [
   },
   {
     q: '할인 혜택은 어떻게 되나요?',
-    a: '재원생 / 형제·자매 / 기존 캠프 등록자 / 친구 소개(비재원생) / 얼리버드(6/1~7/10) 각 10%이며, 최대 3가지까지 중복 적용 가능합니다. 비재원생 소개 30% 할인은 단독 적용입니다.',
+    a: '재원생 / 형제·자매 / 기존 캠프 등록자 / 친구 소개로 등록(비재원생) / 얼리버드(6/1~6/30) 각 10%이며, 최대 3가지까지 중복 적용 가능합니다(최대 30%). 다른 비재원생 친구를 소개할 시 30% 할인은 단독 적용입니다.',
   },
   {
     q: '환불 정책이 어떻게 되나요?',
-    a: '6/26까지는 전액 환불, 6/27~7/3은 10% 차감, 7/4~7/10은 20% 차감 후 환불됩니다. 7/11 이후로는 환불이 불가하니 신청 전 일정을 꼭 확인해주세요.',
+    a: '6/30까지는 전액 환불, 7/1~7/5는 10% 차감, 7/6~7/10은 20% 차감 후 환불됩니다. 7/11 이후로는 환불이 불가하니 신청 전 환불 정책을 반드시 확인해주세요.',
   },
   {
-    q: '캠프 기간 중 정규반과 병행 가능한가요?',
-    a: '가능합니다. 캠프와 정규반을 병행하실 경우 해당 기간(2주) 정규반 비용을 반값(약 18만원) 차감해 드립니다.',
+    q: '캠프 기간 중 8월 정규반도 함께 들을 수 있나요?',
+    a: '가능합니다. 8월 April 정규 Class를 함께 등록하시면 8월 학기 수강료를 50%(반값)로 할인해 드립니다. 자세한 내용은 신청 시 함께 문의해주세요.',
+  },
+  {
+    q: '하원 차량은 어느 지역까지 운행하나요?',
+    a: '성산동·중동·서교동·동교동·망원동·연남동·상암동·덕은동·증산동·수색동·남가좌동·북가좌동·가재울·합정동 지역으로 하원 차량을 배정해 드립니다. 등원은 개인 등원만 가능하며, 구체적인 차량 노선은 7월 중 별도 안내드립니다.',
   },
 ]
 
@@ -169,23 +283,32 @@ function AprilLogo({ className = '', size = 'md' }) {
   const labelSize = size === 'lg' ? 'text-2xl' : 'text-xl'
   const subSize = size === 'lg' ? 'text-sm' : 'text-xs'
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <span className={`relative inline-flex ${markSize} shrink-0 items-center justify-center`}>
-        <svg viewBox="0 0 64 64" className="absolute inset-0 h-full w-full">
-          <path
-            d="M52 8C32 8 16 22 12 40c-2 10 2 18 8 20 2-18 14-32 32-36 0-8 0-16 0-16z"
-            fill="#9DCD3B"
-          />
-        </svg>
-        <span className="relative z-10 text-[10px] font-bold text-white -translate-y-0.5">
+    <div className={`flex items-center gap-2.5 ${className}`}>
+      {/* 청담에이프릴 로고 — 초록 잎사귀 + 흰색 April */}
+      <svg viewBox="0 0 100 100" className={`${markSize} shrink-0`} role="img" aria-label="청담에이프릴 로고">
+        <path
+          d="M0,42 A42,42 0 0 1 42,0 L58,0 A42,42 0 0 1 100,42 L100,89 A11,11 0 0 1 89,100 L42,100 A42,42 0 0 1 0,58 Z"
+          fill="#84BD00"
+        />
+        <text
+          x="50"
+          y="55"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontFamily="'Pretendard','Noto Sans KR',system-ui,sans-serif"
+          fontSize="29"
+          fontWeight="800"
+          letterSpacing="-1.5"
+          fill="#ffffff"
+        >
           April
-        </span>
-      </span>
+        </text>
+      </svg>
       <div className="flex min-w-0 flex-col leading-tight">
-        <span className={`${labelSize} font-bold tracking-tight text-april-navy`}>
-          April <span className="font-semibold">어학원</span>
+        <span className={`${labelSize} font-extrabold tracking-tight text-april-navy`}>
+          청담에이프릴
         </span>
-        <span className={`${subSize} font-semibold text-april-lime-dark`}>
+        <span className={`${subSize} font-semibold text-april-navy-soft`}>
           마포상암캠퍼스
         </span>
       </div>
@@ -280,8 +403,11 @@ function Hero() {
                   <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur">
                     SUMMER 2026
                   </div>
-                  <p className="mt-6 text-2xl font-bold leading-snug">
-                    “Speak. Think.<br />Create — in English.”
+                  <p className="mt-6 text-xl font-bold leading-snug sm:text-2xl">
+                    10 Days.<br />Countless Memories.<br />Lifelong Confidence.
+                  </p>
+                  <p className="mt-3 text-sm leading-relaxed text-white/85">
+                    A Summer of Growth, Confidence, Creativity, and Critical Thinking.
                   </p>
                 </div>
                 <div className="space-y-2 text-sm">
@@ -291,7 +417,7 @@ function Hero() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span>🕘</span>
-                    <span>09:00 – 14:30 (등원 08:00~)</span>
+                    <span>09:00 – 14:20 (등원 08:00~)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span>🚌</span>
@@ -300,17 +426,23 @@ function Hero() {
                 </div>
               </div>
             </div>
-            <div className="absolute -bottom-6 -left-6 rounded-2xl bg-white px-5 py-4 shadow-soft">
+            <a
+              href="#apply"
+              className="group absolute -bottom-6 -right-6 rounded-2xl bg-white px-5 py-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg"
+            >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-april-sun text-lg">
                   ⏰
                 </div>
                 <div>
                   <p className="text-xs text-april-navy-soft">1차 신청 마감</p>
-                  <p className="text-sm font-bold text-april-navy">6/26 (금)까지</p>
+                  <p className="text-sm font-bold text-april-navy">6/30 (화)까지</p>
+                  <p className="mt-0.5 text-xs font-bold text-april-lime-dark">
+                    지금 신청하기 <span className="transition group-hover:translate-x-0.5 inline-block">→</span>
+                  </p>
                 </div>
               </div>
-            </div>
+            </a>
           </div>
         </div>
       </div>
@@ -321,24 +453,28 @@ function Hero() {
 function Why() {
   const items = [
     {
-      icon: '🌎',
-      title: '원어민 몰입 수업',
-      desc: '하루 6시간 중 5시간을 원어민이 직접 가르칩니다. 한국어 사용은 점심시간에만!',
+      icon: '🗣️',
+      title: 'Speak with Confidence',
+      subtitle: '영어로 말하는 자신감',
+      desc: '실수를 두려워하지 않고 원어민 선생님들과 5시간 내내 영어로 표현하는 습관과 자신감을 기릅니다.',
     },
     {
       icon: '🧪',
-      title: '프로젝트형 영어',
-      desc: '주제별 프로젝트로 “쓰고-말하고-발표”까지. 영어가 도구가 되는 경험을 합니다.',
+      title: 'Learn Through Project',
+      subtitle: '창의적 프로젝트 기반 학습',
+      desc: '단순 암기가 아닌 만들기, 토론, 발표, 협동 활동 등의 프로젝트를 통해 영어를 “경험”합니다.',
     },
     {
-      icon: '📚',
-      title: '레벨별 맞춤 커리큘럼',
-      desc: '입문/기본/심화 3단계 · 무료 레벨테스트 후 가장 잘 맞는 반에 배정해 드려요.',
+      icon: '🤝',
+      title: 'Build Friendships & Leadership',
+      subtitle: '협동과 리더십 성장',
+      desc: '하우스 시스템과 팀 활동을 통해 협력하는 방법을 배우고 리더십과 커뮤니케이션을 경험합니다.',
     },
     {
-      icon: '🎒',
-      title: '소수 정예 12명',
-      desc: '반당 12명 정원으로 모든 아이가 발화할 기회를 충분히 갖습니다.',
+      icon: '🏅',
+      title: 'Celebrate Every Achievement',
+      subtitle: '노력과 성장을 인정하는 시스템',
+      desc: 'Stamp & Harry Potter House Point System을 통해\n작은 도전과 성취도 의미 있게 보상합니다.',
     },
   ]
   return (
@@ -347,21 +483,49 @@ function Why() {
         <SectionTitle
           eyebrow="Why April Camp"
           title="에이프릴 여름캠프만의 4가지"
-          description="단순한 영어 수업이 아닌, 한 여름의 변화를 만드는 4주를 만듭니다."
+          description={
+            <>
+              단순한 영어 수업이 아닙니다.
+              <br />
+              아이들이 영어로 말하고, 창의적·논리적으로 생각하고,
+              <br />
+              협력하며 성장하는 특별한 2주입니다.
+            </>
+          }
         />
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((item) => (
+          {items.map((item, i) => (
             <div
               key={item.title}
               className="group rounded-2xl border border-april-navy/5 bg-white p-6 transition hover:-translate-y-1 hover:border-april-lime/30 hover:shadow-soft"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-april-lime-soft text-2xl">
-                {item.icon}
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-april-lime-soft text-2xl">
+                  {item.icon}
+                </div>
+                <span className="text-2xl font-extrabold text-april-lime/40">{`0${i + 1}`}</span>
               </div>
-              <h3 className="mt-5 text-lg font-bold text-april-navy">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-april-navy-soft">{item.desc}</p>
+              <h3 className="mt-5 text-base font-bold text-april-navy">{item.title}</h3>
+              <p className="mt-1 text-sm font-semibold text-april-lime-dark">{item.subtitle}</p>
+              <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-april-navy-soft">{item.desc}</p>
             </div>
           ))}
+        </div>
+
+        {/* 5. 레벨별 맞춤 커리큘럼 */}
+        <div className="mt-6 flex flex-col items-start gap-4 rounded-2xl border border-april-lime/30 bg-april-lime-soft/40 p-6 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-2xl">
+              📚
+            </div>
+            <span className="text-2xl font-extrabold text-april-lime/50">05</span>
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-april-navy">레벨별 맞춤 커리큘럼</h3>
+            <p className="mt-1 text-sm leading-relaxed text-april-navy-soft">
+              Rookie부터 Ivy까지 7단계 레벨 · 무료 레벨테스트 후 가장 잘 맞는 반에 배정해 드려요.
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -372,92 +536,213 @@ function Program() {
   return (
     <section id="program" className="bg-white py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-6">
-        <SectionTitle
-          eyebrow="Program"
-          title="레벨별 프로그램"
-          description="아이의 영어 수준에 가장 잘 맞는 반에서 시작합니다."
-        />
-        <div className="mt-14 grid gap-6 lg:grid-cols-3">
-          {LEVELS.map((lvl, i) => (
-            <div
-              key={lvl.badge}
-              className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${lvl.color} p-8 shadow-soft`}
-            >
-              <div className="absolute right-4 top-4 text-5xl opacity-30">{lvl.icon}</div>
-              <div className="relative">
-                <span
-                  className={`inline-flex items-center rounded-full ${lvl.accent} ${lvl.accentText} px-3 py-1 text-xs font-bold`}
-                >
-                  Lv. {i + 1} · {lvl.badge}
-                </span>
-                <h3 className="mt-4 flex items-baseline gap-2 text-2xl font-bold text-april-navy">
-                  {lvl.name}
-                  <span className="text-sm font-semibold text-april-navy-soft">
-                    {lvl.target}
-                  </span>
-                </h3>
-                <p className="mt-1 text-xs font-medium text-april-lime-dark">
-                  내부 레벨: {lvl.internal}
-                </p>
-                <ul className="mt-6 space-y-3">
-                  {lvl.points.map((p) => (
-                    <li key={p} className="flex items-start gap-2 text-sm text-april-navy">
-                      <span className="mt-1 text-april-lime-dark">✓</span>
-                      <span>{p}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+        {/* 1. 캠프 정보 */}
+        <SectionTitle eyebrow="Camp Info" title="캠프 정보" />
+        <dl className="mx-auto mt-12 grid max-w-4xl gap-x-10 rounded-2xl bg-april-cream p-6 sm:grid-cols-2 sm:p-8">
+          {[
+            ['📅 기간', CAMP_INFO.dates],
+            ['🕘 시간', CAMP_INFO.hours],
+            ['🚪 입실', CAMP_INFO.arrival],
+            ['🚌 차량', CAMP_INFO.transport],
+            ['🎯 대상', CAMP_INFO.target],
+            ['👥 정원', CAMP_INFO.capacity],
+            ['💝 포함', CAMP_INFO.includes],
+          ].map(([k, v]) => (
+            <div key={k} className="flex items-start gap-4 border-b border-april-navy/5 py-3 first:pt-0 sm:[&:nth-child(2)]:pt-0">
+              <dt className="w-24 shrink-0 text-sm font-semibold text-april-navy-soft">{k}</dt>
+              <dd className="flex-1 text-sm font-medium text-april-navy">{v}</dd>
             </div>
           ))}
+        </dl>
+        {/* 마감 — 1차·2차 같은 줄 */}
+        <div className="mx-auto mt-4 grid max-w-4xl gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border-2 border-april-lime bg-april-lime-soft/50 p-5">
+            <p className="text-sm font-bold text-april-lime-dark">🐤 1차 마감</p>
+            <p className="mt-1 text-sm font-medium text-april-navy">{CAMP_INFO.earlyBirdDeadline}</p>
+          </div>
+          <div className="rounded-2xl border-2 border-april-navy/10 bg-white p-5">
+            <p className="text-sm font-bold text-april-navy-soft">📝 2차 마감</p>
+            <p className="mt-1 text-sm font-medium text-april-navy">{CAMP_INFO.applyDeadline}</p>
+          </div>
         </div>
-        <p className="mt-6 text-center text-sm text-april-navy-soft">
-          ※ 비재원생은 신청 후 <strong className="text-april-navy">무료 레벨테스트</strong>를 통해 반이 배정됩니다.
-        </p>
 
-        <div className="mt-16 grid gap-10 lg:grid-cols-2">
-          <div>
-            <h3 className="text-2xl font-bold text-april-navy">하루 일과</h3>
-            <p className="mt-2 text-sm text-april-navy-soft">
-              매일 같은 리듬으로 영어에 자연스럽게 익숙해집니다.
-            </p>
-            <div className="mt-6 overflow-hidden rounded-2xl border border-april-navy/10">
-              {SCHEDULE.map((row, i) => (
-                <div
-                  key={row.time}
-                  className={`flex items-center gap-4 px-5 py-4 ${
-                    i % 2 === 0 ? 'bg-april-cream' : 'bg-white'
-                  }`}
-                >
-                  <span className="w-32 shrink-0 font-mono text-xs font-semibold text-april-lime-dark">
-                    {row.time}
+        {/* 2. 레벨별 반 편성 */}
+        <div className="mt-24">
+          <SectionTitle
+            eyebrow="Levels"
+            title="레벨별 반 편성"
+            description={
+              <>
+                Rookie부터 Ivy까지 7단계 레벨을 4개 그룹으로 운영합니다.
+                <br />
+                무료 레벨테스트 후 가장 잘 맞는 반에 배정됩니다.
+              </>
+            }
+          />
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {LEVEL_GROUPS.map((g) => (
+              <div
+                key={g.group}
+                className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${g.color} p-8 shadow-soft`}
+              >
+                <div className="absolute right-4 top-4 text-5xl opacity-30">{g.icon}</div>
+                <div className="relative">
+                  <span
+                    className={`inline-flex items-center rounded-full ${g.accent} ${g.accentText} px-3 py-1 text-xs font-bold`}
+                  >
+                    {g.group} · {g.name}
                   </span>
-                  <span className="text-sm text-april-navy">{row.activity}</span>
+                  <h3 className="mt-4 text-lg font-semibold text-april-navy-soft">
+                    {g.target}
+                  </h3>
+                  <ul className="mt-6 space-y-3">
+                    {g.levels.map((lv) => (
+                      <li key={lv.name} className="flex items-baseline justify-between gap-2 border-b border-april-navy/5 pb-3 last:border-none last:pb-0">
+                        <span className="text-base font-bold text-april-navy">{lv.name}</span>
+                        <span className="text-xs font-medium text-april-lime-dark">{lv.internal}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-sm text-april-navy-soft">
+            ※ 비재원생은 신청 후 <strong className="text-april-navy">무료 레벨테스트</strong>를 통해 반이 배정됩니다. 정원에 따라 반 편성은 조정될 수 있습니다.
+          </p>
+        </div>
+
+        {/* 3. 하루 시간표 */}
+        <div className="mt-24">
+          <div className="text-center">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-april-lime-soft px-3 py-1 text-xs font-semibold uppercase tracking-wider text-april-lime-dark">
+              <span className="h-1.5 w-1.5 rounded-full bg-april-lime" />
+              Daily Timetable
+            </div>
+            <h3 className="text-3xl font-bold text-april-navy sm:text-4xl">하루 시간표</h3>
+            <p className="mx-auto mt-4 max-w-2xl text-base text-april-navy-soft sm:text-lg">
+              매일 같은 리듬으로, 오전 Core Class와 오후 Theme·Activity가 균형 있게 이어집니다.
+            </p>
+          </div>
+          <div className="mx-auto mt-10 max-w-3xl overflow-hidden rounded-2xl border border-april-navy/10">
+            <div className="flex items-center gap-4 bg-april-navy px-5 py-3 text-xs font-bold uppercase tracking-wider text-white/80">
+              <span className="w-44 shrink-0">교시 (시간)</span>
+              <span>활동</span>
+            </div>
+            {TIMETABLE.map((row, i) => (
+              <div
+                key={`${row.period}-${row.time}`}
+                className={`flex items-center gap-4 px-5 py-3.5 ${
+                  row.highlight ? 'bg-april-lime-soft/60' : i % 2 === 0 ? 'bg-white' : 'bg-april-cream'
+                }`}
+              >
+                <span className="w-44 shrink-0">
+                  <span className={`block text-sm font-bold ${row.highlight ? 'text-april-lime-dark' : 'text-april-navy'}`}>
+                    {row.period}
+                  </span>
+                  <span className="block font-mono text-xs text-april-navy-soft">{row.time}</span>
+                </span>
+                <span className="text-sm font-medium text-april-navy">{row.activity}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function DailyTheme() {
+  const week1 = PROGRAM_DAYS.slice(0, 5)
+  const week2 = PROGRAM_DAYS.slice(5, 10)
+  return (
+    <section className="bg-white pb-20 sm:pb-28">
+      <div className="mx-auto max-w-6xl px-6">
+        {/* Daily Theme Class */}
+        <div className="text-center">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-april-lime-soft px-3 py-1 text-xs font-semibold uppercase tracking-wider text-april-lime-dark">
+            <span className="h-1.5 w-1.5 rounded-full bg-april-lime" />
+            Daily Theme Class
+          </div>
+          <h3 className="text-3xl font-bold text-april-navy sm:text-4xl">10일, 매일 새로운 테마</h3>
+          <p className="mx-auto mt-4 max-w-2xl text-base text-april-navy-soft sm:text-lg">
+            매일 다른 테마와 액티비티로 영어로 어우러지는 경험을 합니다.
+            <br />
+            하루 <strong className="text-april-navy">Theme 40분</strong>을 중심으로,
+            <br className="sm:hidden" /> 일부 날에는 <strong className="text-april-navy">Activity 30분</strong>이 더해집니다.
+          </p>
+        </div>
+
+        {[{ label: 'Week 1 · 8/3 – 8/7', days: week1 }, { label: 'Week 2 · 8/10 – 8/14', days: week2 }].map((wk) => (
+          <div key={wk.label} className="mt-10">
+            <p className="mb-4 text-sm font-bold uppercase tracking-wider text-april-lime-dark">{wk.label}</p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              {wk.days.map((d) => (
+                <div
+                  key={d.day}
+                  className="flex flex-col rounded-2xl border border-april-navy/10 bg-white p-5 transition hover:-translate-y-1 hover:border-april-lime/40 hover:shadow-soft"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-april-navy-soft">DAY {d.day}</span>
+                    <span className="text-xs font-medium text-april-navy-soft">{d.date}</span>
+                  </div>
+                  <div className="mt-3 text-3xl">{d.icon}</div>
+                  <p className="mt-2 text-xs font-bold uppercase tracking-wide text-april-lime-dark">{d.theme}</p>
+                  <h4 className="mt-1 text-base font-bold leading-snug text-april-navy">{d.title}</h4>
+                  <p className="mt-1 flex-1 text-xs text-april-navy-soft">{d.desc}</p>
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {d.tags.map((t) => (
+                      <span
+                        key={t}
+                        className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          t === 'House 포인트'
+                            ? 'bg-april-sun/30 text-april-navy'
+                            : t === '전체 통합'
+                              ? 'bg-april-lime-soft text-april-lime-dark'
+                              : 'bg-april-navy/5 text-april-navy-soft'
+                        }`}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
+        ))}
 
-          <div>
-            <h3 className="text-2xl font-bold text-april-navy">캠프 정보</h3>
-            <p className="mt-2 text-sm text-april-navy-soft">한 눈에 확인하세요.</p>
-            <dl className="mt-6 space-y-4 rounded-2xl bg-april-cream p-6">
-              {[
-                ['📅 기간', CAMP_INFO.dates],
-                ['🕘 시간', CAMP_INFO.hours],
-                ['🚪 입실', CAMP_INFO.arrival],
-                ['🚌 차량', CAMP_INFO.transport],
-                ['🎯 대상', CAMP_INFO.target],
-                ['💝 포함', CAMP_INFO.includes],
-                ['📝 신청 마감', CAMP_INFO.applyDeadline],
-                ['🐤 1차 마감', CAMP_INFO.earlyBirdDeadline],
-              ].map(([k, v]) => (
-                <div key={k} className="flex items-start gap-4 border-b border-april-navy/5 pb-3 last:border-none last:pb-0">
-                  <dt className="w-24 shrink-0 text-sm font-semibold text-april-navy-soft">{k}</dt>
-                  <dd className="flex-1 text-sm font-medium text-april-navy">{v}</dd>
+        {/* Activity (SEL Therapy) */}
+        <div className="mt-16">
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-april-lime-soft text-2xl">
+              🧘
+            </span>
+            <div>
+              <h3 className="text-2xl font-bold text-april-navy">Activity (SEL Therapy &amp; Physical Activity)</h3>
+              <p className="mt-2 text-sm leading-relaxed text-april-navy-soft">
+                미국 학교에서 널리 활용되는 SEL(Social-Emotional Learning) 프로그램을 바탕으로, 학생들이 감정을 이해하고 표현하며 건강한 관계를 형성할 수 있도록 돕습니다. 또한 다양한 신체 활동과 팀 게임을 통해 협동심, 자신감, 리더십을 기르고 즐겁게 에너지를 발산할 수 있는 시간을 제공합니다.
+              </p>
+            </div>
+          </div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {ACTIVITY_THERAPY.map((a) => (
+              <div
+                key={a.name}
+                className="rounded-2xl border border-april-navy/10 bg-april-cream p-5 transition hover:-translate-y-1 hover:border-april-lime/40 hover:shadow-soft"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-xl">
+                    {a.icon}
+                  </span>
+                  <div>
+                    <h4 className="text-sm font-bold text-april-navy">{a.name}</h4>
+                    <p className="text-xs font-medium text-april-lime-dark">{a.theme}</p>
+                  </div>
                 </div>
-              ))}
-            </dl>
+                <p className="mt-3 text-sm leading-relaxed text-april-navy-soft">{a.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -475,15 +760,15 @@ function Activities() {
       <div className="mx-auto max-w-6xl px-6">
         <SectionTitle
           eyebrow="Interactive Activities"
-          title="이렇게 영어를 씁니다"
-          description="문제만 푸는 영어가 아닌, 실제로 써보는 영어. 캠프에서 진행하는 대표 액티비티를 소개합니다."
+          title="이렇게 영어를 경험합니다"
+          description="캠프에서 진행하는 핵심 액티비티를 소개합니다."
         />
         <div className="mt-14 grid gap-6 md:grid-cols-2">
           {ACTIVITIES.map((act, i) => (
             <div
               key={act.title}
               className={`group relative overflow-hidden rounded-3xl border border-april-navy/10 p-7 transition hover:-translate-y-1 hover:border-april-lime/40 hover:shadow-soft ${
-                i === 4 ? 'md:col-span-2' : ''
+                i === ACTIVITIES.length - 1 && ACTIVITIES.length % 2 === 1 ? 'md:col-span-2' : ''
               }`}
             >
               <div className="absolute -right-4 -top-4 text-7xl opacity-10 transition group-hover:scale-110 group-hover:opacity-20">
@@ -515,22 +800,34 @@ function Activities() {
           ))}
         </div>
         <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl bg-april-lime-soft/40 p-6 text-center">
-          <p className="text-sm font-semibold text-april-navy">
-            📘 캠프의 핵심은 <strong className="text-april-lime-dark">즐겁게, 그러나 제대로</strong>
+          <p className="text-base font-bold text-april-navy">
+            📘 캠프의 핵심은 <strong className="text-april-lime-dark">즐겁게, 그러나 제대로 ! !</strong>
           </p>
-          <p className="max-w-xl text-sm text-april-navy-soft">
-            그냥 즐겁기만 한 체험도, 문제만 푸는 수업도 아닙니다. 2주라는 짧은 시간 동안 아이들이
-            <strong className="text-april-navy"> 영어를 도구로 쓰는 경험</strong>을 합니다.
+          <p className="max-w-xl whitespace-pre-line text-sm text-april-navy-soft">
+            {'그냥 즐겁기만 한 체험도, 문제만 푸는 수업도 아닙니다.\n2주라는 짧은 시간 동안 아이들이 영어를 도구로 쓰는 경험을 합니다.'}
           </p>
-          <a
-            href={CAMP_INFO.blogUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-2 text-xs font-bold text-april-lime-dark hover:underline"
-          >
-            네이버 블로그에서 더 많은 액티비티 사례 보기 →
-          </a>
         </div>
+
+        {/* 네이버 블로그 — 별도 카드 */}
+        <a
+          href={CAMP_INFO.blogUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group mt-6 flex items-center justify-between gap-4 rounded-2xl border border-april-navy/10 bg-white p-6 transition hover:border-april-lime/40 hover:shadow-soft"
+        >
+          <div className="flex items-center gap-4">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#03C75A] text-xl font-bold text-white">
+              N
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-april-navy-soft">2026 여름 캠프</p>
+              <p className="text-base font-bold text-april-navy">네이버 블로그에서 더 보기</p>
+            </div>
+          </div>
+          <span className="text-lg text-april-navy-soft transition group-hover:translate-x-1 group-hover:text-april-lime-dark">
+            →
+          </span>
+        </a>
       </div>
     </section>
   )
@@ -543,7 +840,7 @@ function Fees() {
         <SectionTitle
           eyebrow="Tuition"
           title="수강료 안내"
-          description="할인 조건을 최대 3가지까지 중복 적용하실 수 있어요."
+          description="할인 조건을 최대 3가지까지 중복 적용하실 수 있습니다."
         />
 
         {/* 정가 */}
@@ -610,9 +907,9 @@ function Fees() {
               🎁
             </span>
             <div>
-              <h3 className="text-xl font-bold text-april-navy">할인 조건 (각 10%)</h3>
+              <h3 className="text-xl font-bold text-april-navy">할인 조건 (각 10% / 최대 3개까지 중복 적용 가능)</h3>
               <p className="mt-1 text-sm text-april-navy-soft">
-                아래 조건 중 해당하시는 항목이 많을수록 더 큰 혜택을 받으실 수 있어요. 최대 3가지 중복 가능.
+                아래 조건 중 해당하시는 항목이 많을수록 더 큰 혜택을 받으실 수 있습니다.
               </p>
             </div>
           </div>
@@ -630,12 +927,53 @@ function Fees() {
               </div>
             ))}
           </div>
-          <div className="mt-5 flex items-start gap-3 rounded-xl border border-april-lime/30 bg-april-lime-soft/40 p-4">
-            <span className="text-lg">⭐</span>
+          <p className="mt-4 text-xs text-april-navy-soft">
+            ※ 1주만 참여하실 경우 정가의 <strong className="text-april-navy">반값</strong>으로 등록 가능합니다.
+          </p>
+          <div className="mt-3 flex items-start gap-3 rounded-xl border border-april-navy/10 bg-april-cream p-4">
+            <span className="text-lg">📅</span>
             <p className="text-sm text-april-navy">
-              <strong className="text-april-lime-dark">친구 소개(비재원생)</strong> 등록 시 별도로{' '}
-              <strong>30% 할인</strong>이 단독 적용됩니다.
+              <strong className="text-april-navy">8월 April 정규 Class 병행 시</strong> 수업료를{' '}
+              <strong className="text-april-lime-dark">50% 할인</strong>해 드립니다 (8월 학기 수강료 반값 할인 !).
             </p>
+          </div>
+        </div>
+
+        {/* 할인 조건 30% (단독 적용) */}
+        <div className="mt-6 rounded-3xl border-2 border-april-lime bg-april-lime-soft/40 p-8 sm:p-10">
+          <div className="flex items-start gap-4">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-april-lime text-xl text-white">
+              ⭐
+            </span>
+            <div>
+              <h3 className="text-xl font-bold text-april-navy">할인 조건 30% (단독 적용)</h3>
+              <p className="mt-1 text-sm text-april-navy">
+                <strong className="text-april-lime-dark">친구 소개(비재원생)</strong> 시 30% 할인이 단독 적용됩니다 (중복 할인 불가). 😊 많은 소개 부탁드립니다!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 등록 일정 */}
+        <div className="mt-12">
+          <h3 className="text-2xl font-bold text-april-navy">등록 일정</h3>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {APPLY_SCHEDULE.map((s) => (
+              <div
+                key={s.label}
+                className={`rounded-2xl border-2 p-6 ${
+                  s.tone === 'good'
+                    ? 'border-april-lime bg-april-lime-soft/50'
+                    : 'border-april-navy/10 bg-white'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-april-lime-dark">{s.date}</span>
+                  <span className="text-sm font-bold text-april-navy">· {s.label}</span>
+                </div>
+                <p className="mt-2 text-sm text-april-navy-soft">{s.detail}</p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -670,30 +1008,13 @@ function Fees() {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* 블로그 링크 */}
-        <a
-          href={CAMP_INFO.blogUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group mt-12 flex items-center justify-between gap-4 rounded-2xl border border-april-navy/10 bg-white p-6 transition hover:border-april-lime/40 hover:shadow-soft"
-        >
-          <div className="flex items-center gap-4">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#03C75A] text-xl text-white">
-              N
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-april-navy-soft">자세한 액티비티 안내</p>
-              <p className="text-base font-bold text-april-navy">
-                네이버 블로그에서 더 보기
-              </p>
-            </div>
+          <div className="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+            <span className="text-lg">⚠️</span>
+            <p className="text-sm font-semibold text-red-600">
+              신청 전 환불 정책을 <strong>반드시</strong> 확인해주세요! 7/11 이후로는 환불이 불가합니다.
+            </p>
           </div>
-          <span className="text-lg text-april-navy-soft transition group-hover:translate-x-1 group-hover:text-april-lime-dark">
-            →
-          </span>
-        </a>
+        </div>
       </div>
     </section>
   )
@@ -702,26 +1023,76 @@ function Fees() {
 function Apply() {
   const [form, setForm] = useState({
     studentName: '',
-    grade: '',
+    age: '',
+    studentType: '재원생',
+    level: '',
+    allergy: '',
+    regularClass: '',
     parentName: '',
     phone: '',
-    email: '',
-    studentType: '비재원생',
-    level: '레벨테스트 후 결정',
+    portraitConsent: '',
+    shuttleMWF: '',
+    shuttleTT: '',
     note: '',
     consent: false,
   })
   const [error, setError] = useState('')
+  const [status, setStatus] = useState('idle') // idle | sending | done
 
   const update = (k) => (e) => {
     const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value
     setForm((f) => ({ ...f, [k]: val }))
   }
+  const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
-  const handleSubmit = (e) => {
+  const levelValue =
+    form.studentType === '재원생' ? form.level : '레벨테스트 희망 (전화 드릴 예정)'
+
+  const buildPayload = () => ({
+    신청일시: new Date().toLocaleString('ko-KR'),
+    이름: form.studentName,
+    나이: form.age,
+    재원여부: form.studentType,
+    레벨: levelValue,
+    알러지: form.allergy || '없음',
+    초상권동의: form.portraitConsent,
+    정규클래스수강여부: form.regularClass,
+    부모님성함: form.parentName,
+    부모님연락처: form.phone,
+    '하원장소(월수금)': form.shuttleMWF,
+    '하원장소(화목)': form.shuttleTT,
+    특이사항: form.note,
+  })
+
+  const sendMail = () => {
+    const p = buildPayload()
+    const subject = encodeURIComponent(`[여름캠프 신청] ${form.studentName} (${form.age || '나이 미입력'})`)
+    const body = encodeURIComponent(
+      ['※ 2026 여름캠프 신청서 ※', '', ...Object.entries(p).map(([k, v]) => `${k}: ${v || '-'}`), '', '— 개인정보·초상권 동의: 동의함 —'].join('\n'),
+    )
+    window.location.href = `mailto:${CAMP_INFO.email}?subject=${subject}&body=${body}`
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.studentName.trim() || !form.parentName.trim() || !form.phone.trim()) {
-      setError('학생 이름, 보호자 이름, 연락처는 필수입니다.')
+    if (!form.studentName.trim() || !form.age.trim() || !form.parentName.trim() || !form.phone.trim()) {
+      setError('학생 이름, 나이, 부모님 성함, 연락처는 필수입니다.')
+      return
+    }
+    if (!form.allergy.trim()) {
+      setError("알러지 항목은 필수입니다. 없으면 '없음' 버튼을 눌러주세요.")
+      return
+    }
+    if (form.studentType === '재원생' && !form.level) {
+      setError('재원생은 현재 레벨을 선택해주세요.')
+      return
+    }
+    if (!form.regularClass) {
+      setError('정규 클래스 수강 여부를 선택해주세요.')
+      return
+    }
+    if (!form.portraitConsent) {
+      setError('초상권 동의 여부를 선택해주세요.')
       return
     }
     if (!form.consent) {
@@ -730,33 +1101,59 @@ function Apply() {
     }
     setError('')
 
-    const subject = encodeURIComponent(
-      `[여름캠프 신청] ${form.studentName} (${form.grade || '학년 미입력'})`,
-    )
-    const body = encodeURIComponent(
-      [
-        '※ 2026 여름캠프 신청서 ※',
-        '',
-        `학생 이름: ${form.studentName}`,
-        `학년: ${form.grade}`,
-        `재원 여부: ${form.studentType}`,
-        `보호자 이름: ${form.parentName}`,
-        `연락처: ${form.phone}`,
-        `이메일: ${form.email}`,
-        `희망 레벨: ${form.level}`,
-        '',
-        '— 요청 사항 / 알레르기 —',
-        form.note || '(없음)',
-        '',
-        '— 개인정보 수집·이용 동의: 동의함 —',
-      ].join('\n'),
-    )
-
-    window.location.href = `mailto:${CAMP_INFO.email}?subject=${subject}&body=${body}`
+    if (SHEET_ENDPOINT) {
+      setStatus('sending')
+      try {
+        // Apps Script 웹앱은 CORS 응답을 주지 않으므로 no-cors로 전송한다.
+        // (요청은 정상 도달해 시트에 기록되며, 응답 본문은 읽지 않는다.)
+        await fetch(SHEET_ENDPOINT, {
+          method: 'POST',
+          mode: 'no-cors',
+          body: JSON.stringify(buildPayload()),
+        })
+        setStatus('done')
+        return
+      } catch {
+        // 네트워크 실패 시 이메일 방식으로 대체
+        setStatus('idle')
+        sendMail()
+        return
+      }
+    }
+    // 시트 연동 미설정 시 이메일 방식
+    sendMail()
   }
 
   const inputCls =
     'w-full rounded-xl border border-april-navy/15 bg-white px-4 py-3 text-sm text-april-navy placeholder:text-april-navy-soft/60 focus:border-april-lime focus:outline-none focus:ring-2 focus:ring-april-lime/30'
+  const labelCls = 'mb-2 block text-sm font-semibold'
+  const req = <span className="text-april-lime-dark">*</span>
+
+  if (status === 'done') {
+    return (
+      <section id="apply" className="bg-april-navy py-20 text-white sm:py-28">
+        <div className="mx-auto max-w-xl px-6 text-center">
+          <div className="rounded-3xl bg-white p-10 text-april-navy shadow-soft">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-april-lime-soft text-3xl">
+              ✅
+            </div>
+            <h2 className="mt-6 text-2xl font-bold">신청이 접수되었습니다!</h2>
+            <p className="mt-3 text-sm leading-relaxed text-april-navy-soft">
+              {form.studentName} 학생의 신청서가 정상적으로 전송되었습니다.
+              <br />
+              담당 선생님이 확인 후 <strong className="text-april-navy">1영업일 내</strong> 연락드릴게요.
+            </p>
+            <a
+              href={`tel:${CAMP_INFO.phone}`}
+              className="mt-6 inline-flex items-center justify-center rounded-full bg-april-lime px-6 py-3 text-sm font-bold text-white transition hover:bg-april-lime-dark"
+            >
+              전화 문의 {CAMP_INFO.phone}
+            </a>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section id="apply" className="bg-april-navy py-20 text-white sm:py-28">
@@ -777,92 +1174,137 @@ function Apply() {
           className="mt-12 rounded-3xl bg-white p-8 text-april-navy shadow-soft sm:p-10"
         >
           <div className="grid gap-5 sm:grid-cols-2">
+            {/* 이름 / 나이 */}
             <div>
-              <label className="mb-2 block text-sm font-semibold">
-                학생 이름 <span className="text-april-lime-dark">*</span>
-              </label>
-              <input
-                type="text"
-                value={form.studentName}
-                onChange={update('studentName')}
-                placeholder="홍길동"
-                className={inputCls}
-              />
+              <label className={labelCls}>학생 이름 {req}</label>
+              <input type="text" value={form.studentName} onChange={update('studentName')} placeholder="홍길동" className={inputCls} />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-semibold">학년</label>
-              <select value={form.grade} onChange={update('grade')} className={inputCls}>
-                <option value="">선택해주세요</option>
-                <option>예비 초1</option>
-                <option>초1</option>
-                <option>초2</option>
-                <option>초3</option>
-                <option>초4</option>
-                <option>초5</option>
-                <option>초6</option>
-              </select>
+              <label className={labelCls}>나이 {req}</label>
+              <input type="text" value={form.age} onChange={update('age')} placeholder="예: 8세 / 초2" className={inputCls} />
             </div>
+
+            {/* 재원 여부 / 레벨 */}
             <div>
-              <label className="mb-2 block text-sm font-semibold">
-                보호자 이름 <span className="text-april-lime-dark">*</span>
-              </label>
-              <input
-                type="text"
-                value={form.parentName}
-                onChange={update('parentName')}
-                placeholder="홍부모"
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
-                연락처 <span className="text-april-lime-dark">*</span>
-              </label>
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={update('phone')}
-                placeholder="010-0000-0000"
-                className={inputCls}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-2 block text-sm font-semibold">이메일</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={update('email')}
-                placeholder="parent@example.com"
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-semibold">재원 여부</label>
+              <label className={labelCls}>재원 여부 {req}</label>
               <select value={form.studentType} onChange={update('studentType')} className={inputCls}>
-                <option>비재원생</option>
                 <option>재원생</option>
-                <option>형제·자매 동반</option>
-                <option>친구 소개로 등록</option>
+                <option>비재원생</option>
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-semibold">희망 레벨</label>
-              <select value={form.level} onChange={update('level')} className={inputCls}>
-                <option>레벨테스트 후 결정</option>
-                <option>Sprout (새싹반 · 입문~기초)</option>
-                <option>Bloom (개화반 · 중급)</option>
-                <option>Harvest (열매반 · 심화)</option>
-              </select>
+              <label className={labelCls}>레벨 {form.studentType === '재원생' && req}</label>
+              {form.studentType === '재원생' ? (
+                <select value={form.level} onChange={update('level')} className={inputCls}>
+                  <option value="">현재 레벨 선택</option>
+                  {ENROLLED_LEVELS.map((lv) => (
+                    <option key={lv}>{lv}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="flex h-[46px] items-center rounded-xl border border-dashed border-april-navy/20 bg-april-cream px-4 text-sm font-medium text-april-navy-soft">
+                  레벨테스트 희망 — 전화 드릴 예정 📞
+                </div>
+              )}
             </div>
+
+            {/* 부모님 성함 / 연락처 */}
+            <div>
+              <label className={labelCls}>부모님 성함 {req}</label>
+              <input type="text" value={form.parentName} onChange={update('parentName')} placeholder="홍부모" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>부모님 연락처 {req}</label>
+              <input type="tel" value={form.phone} onChange={update('phone')} placeholder="010-0000-0000" className={inputCls} />
+            </div>
+
+            {/* 알러지 (필수) */}
             <div className="sm:col-span-2">
-              <label className="mb-2 block text-sm font-semibold">
-                요청 사항 / 알레르기 등
-              </label>
+              <label className={labelCls}>알러지 {req}</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={form.allergy}
+                  onChange={update('allergy')}
+                  disabled={form.allergy === '없음'}
+                  placeholder="식품 알러지 등을 적어주세요"
+                  className={`${inputCls} flex-1 disabled:bg-april-cream disabled:text-april-navy-soft`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setField('allergy', form.allergy === '없음' ? '' : '없음')}
+                  className={`shrink-0 rounded-xl border px-5 text-sm font-bold transition ${
+                    form.allergy === '없음'
+                      ? 'border-april-lime bg-april-lime-soft text-april-lime-dark'
+                      : 'border-april-navy/15 bg-white text-april-navy-soft hover:border-april-lime/40'
+                  }`}
+                >
+                  없음
+                </button>
+              </div>
+            </div>
+
+            {/* 정규 클래스 수강 여부 (박스) */}
+            <div className="rounded-2xl border border-april-navy/10 bg-april-cream/50 p-4">
+              <label className={labelCls}>8월 정규 클래스 수강 여부 {req}</label>
+              <div className="flex gap-2">
+                {['O', 'X'].map((v) => (
+                  <button
+                    type="button"
+                    key={v}
+                    onClick={() => setField('regularClass', v)}
+                    className={`flex-1 rounded-xl border px-4 py-3 text-sm font-bold transition ${
+                      form.regularClass === v
+                        ? 'border-april-lime bg-april-lime-soft text-april-lime-dark'
+                        : 'border-april-navy/15 bg-white text-april-navy-soft hover:border-april-lime/40'
+                    }`}
+                  >
+                    {v === 'O' ? 'O · 수강' : 'X · 미수강'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* 초상권 동의 (박스) */}
+            <div className="rounded-2xl border border-april-navy/10 bg-april-cream/50 p-4">
+              <label className={labelCls}>초상권(사진·영상) 동의 {req}</label>
+              <div className="flex gap-2">
+                {['동의', '비동의'].map((v) => (
+                  <button
+                    type="button"
+                    key={v}
+                    onClick={() => setField('portraitConsent', v)}
+                    className={`flex-1 rounded-xl border px-4 py-3 text-sm font-bold transition ${
+                      form.portraitConsent === v
+                        ? 'border-april-lime bg-april-lime-soft text-april-lime-dark'
+                        : 'border-april-navy/15 bg-white text-april-navy-soft hover:border-april-lime/40'
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 차량 하원 희망 장소 */}
+            <div className="sm:col-span-2">
+              <label className={labelCls}>차량 하원 희망 장소</label>
+              <p className="mb-2 text-xs text-april-navy-soft">
+                요일별 하원 장소를 입력해주세요. 주소 또는 네이버 지도 링크를 붙여넣으셔도 됩니다.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input type="text" value={form.shuttleMWF} onChange={update('shuttleMWF')} placeholder="월·수·금 하원 장소 / 주소 / 네이버 지도 링크" className={inputCls} />
+                <input type="text" value={form.shuttleTT} onChange={update('shuttleTT')} placeholder="화·목 하원 장소 / 주소 / 네이버 지도 링크" className={inputCls} />
+              </div>
+            </div>
+
+            {/* 특이사항 */}
+            <div className="sm:col-span-2">
+              <label className={labelCls}>기타 요청 사항</label>
               <textarea
                 value={form.note}
                 onChange={update('note')}
-                rows={4}
-                placeholder="식품 알레르기, 컨디션 관련 참고 사항, 상담 희망 시간 등을 자유롭게 적어주세요."
+                rows={3}
+                placeholder="상담 희망 시간, 컨디션 관련 참고 사항 등을 자유롭게 적어주세요."
                 className={inputCls}
               />
             </div>
@@ -878,7 +1320,7 @@ function Apply() {
             <span className="text-april-navy-soft">
               <strong className="text-april-navy">개인정보 수집·이용에 동의합니다.</strong>
               <br />
-              수집 항목: 이름, 학년, 연락처, 이메일 / 이용 목적: 캠프 신청 상담 / 보관 기간: 캠프 종료 후 30일까지.
+              수집 항목: 학생 이름·나이·레벨·알러지, 보호자 성함·연락처, 하원 장소 / 이용 목적: 캠프 신청·반 배정·차량 안내 / 보관 기간: 캠프 종료 후 30일까지.
             </span>
           </label>
 
@@ -890,12 +1332,13 @@ function Apply() {
 
           <button
             type="submit"
-            className="mt-6 w-full rounded-full bg-april-lime py-4 text-base font-bold text-white shadow-soft transition hover:bg-april-lime-dark"
+            disabled={status === 'sending'}
+            className="mt-6 w-full rounded-full bg-april-lime py-4 text-base font-bold text-white shadow-soft transition hover:bg-april-lime-dark disabled:opacity-60"
           >
-            신청서 전송하기 →
+            {status === 'sending' ? '전송 중…' : '신청서 제출하기 →'}
           </button>
           <p className="mt-3 text-center text-xs text-april-navy-soft">
-            전송 버튼을 누르면 이메일 작성 창이 열립니다. 그대로 보내주시면 접수돼요.
+            제출하시면 신청 내용이 캠퍼스로 바로 접수됩니다.
           </p>
         </form>
 
@@ -914,10 +1357,15 @@ function Apply() {
             <p className="text-xs text-white/60">이메일</p>
             <p className="mt-1 break-all font-bold">{CAMP_INFO.email}</p>
           </a>
-          <div className="rounded-2xl bg-white/5 p-5 text-center">
-            <p className="text-xs text-white/60">위치</p>
+          <a
+            href={CAMP_INFO.mapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-2xl bg-white/5 p-5 text-center transition hover:bg-white/10"
+          >
+            <p className="text-xs text-white/60">위치 (네이버 지도 →)</p>
             <p className="mt-1 font-bold">{CAMP_INFO.address}</p>
-          </div>
+          </a>
         </div>
       </div>
     </section>
@@ -997,6 +1445,7 @@ export default function App() {
         <Why />
         <Program />
         <Activities />
+        <DailyTheme />
         <Fees />
         <Apply />
         <FAQ />
