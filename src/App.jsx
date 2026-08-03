@@ -4,14 +4,35 @@ import { useState, useEffect } from 'react'
 // 📸 사진 갤러리 설정
 // 갤러리 비밀번호 — 원하는 값으로 바꾸세요. (학부모님께 이 비밀번호를 안내)
 const GALLERY_PASSWORD = 'april2026'
-// src/gallery/ 폴더에 넣은 사진들을 자동으로 불러옵니다. (파일만 추가하면 갤러리에 나타남)
+// src/gallery/day1, day2 ... 폴더에 넣은 사진들을 날짜별로 자동으로 불러옵니다.
+// (day 폴더에 사진 파일만 추가하면 해당 날짜 탭에 나타남)
 const galleryModules = import.meta.glob(
-  './gallery/*.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP}',
+  './gallery/**/*.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP}',
   { eager: true },
 )
-const GALLERY_PHOTOS = Object.keys(galleryModules)
-  .sort()
-  .map((k) => ({ src: galleryModules[k].default, name: k.split('/').pop() }))
+const GALLERY_DAYS = (() => {
+  const byDay = {}
+  Object.keys(galleryModules)
+    .sort()
+    .forEach((k) => {
+      const m = k.match(/\.\/gallery\/([^/]+)\//)
+      const day = m ? m[1] : '기타'
+      if (!byDay[day]) byDay[day] = []
+      byDay[day].push({ src: galleryModules[k].default, name: k.split('/').pop() })
+    })
+  return Object.keys(byDay)
+    .sort((a, b) => {
+      const na = parseInt(a.replace(/\D/g, ''), 10)
+      const nb = parseInt(b.replace(/\D/g, ''), 10)
+      if (!isNaN(na) && !isNaN(nb)) return na - nb
+      return a.localeCompare(b)
+    })
+    .map((d) => ({
+      key: d,
+      label: /^day\d+$/i.test(d) ? 'Day ' + d.replace(/\D/g, '') : d,
+      photos: byDay[d],
+    }))
+})()
 // ─────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────
@@ -1459,7 +1480,10 @@ function GalleryPage() {
   )
   const [pw, setPw] = useState('')
   const [err, setErr] = useState('')
+  const [dayIdx, setDayIdx] = useState(Math.max(GALLERY_DAYS.length - 1, 0)) // 기본: 최근 날짜
   const [lightbox, setLightbox] = useState(null) // 열린 사진 index
+
+  const photos = GALLERY_DAYS[dayIdx]?.photos || []
 
   const submit = (e) => {
     e.preventDefault()
@@ -1477,12 +1501,12 @@ function GalleryPage() {
     if (lightbox === null) return
     const onKey = (e) => {
       if (e.key === 'Escape') setLightbox(null)
-      else if (e.key === 'ArrowRight') setLightbox((i) => (i + 1) % GALLERY_PHOTOS.length)
-      else if (e.key === 'ArrowLeft') setLightbox((i) => (i - 1 + GALLERY_PHOTOS.length) % GALLERY_PHOTOS.length)
+      else if (e.key === 'ArrowRight') setLightbox((i) => (i + 1) % photos.length)
+      else if (e.key === 'ArrowLeft') setLightbox((i) => (i - 1 + photos.length) % photos.length)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [lightbox])
+  }, [lightbox, photos.length])
 
   return (
     <div className="min-h-screen bg-april-cream">
@@ -1542,35 +1566,61 @@ function GalleryPage() {
             <p className="mt-3 text-sm text-april-navy-soft">2026 여름 캠프의 즐거운 순간들 📸</p>
           </div>
 
-          {GALLERY_PHOTOS.length === 0 ? (
+          {GALLERY_DAYS.length === 0 ? (
             <div className="mt-14 rounded-3xl border border-dashed border-april-navy/20 bg-white p-16 text-center">
               <div className="text-4xl">📷</div>
               <p className="mt-4 text-base font-semibold text-april-navy">아직 준비 중이에요</p>
               <p className="mt-2 text-sm text-april-navy-soft">캠프가 시작되면 사진이 이곳에 올라옵니다.</p>
             </div>
           ) : (
-            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {GALLERY_PHOTOS.map((photo, i) => (
-                <button
-                  key={photo.name}
-                  onClick={() => setLightbox(i)}
-                  className="group relative aspect-square overflow-hidden rounded-2xl bg-white shadow-soft"
-                >
-                  <img
-                    src={photo.src}
-                    alt={`캠프 사진 ${i + 1}`}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                  />
-                </button>
-              ))}
-            </div>
+            <>
+              {/* 날짜 탭 */}
+              <div className="mt-10 flex flex-wrap justify-center gap-2">
+                {GALLERY_DAYS.map((d, i) => (
+                  <button
+                    key={d.key}
+                    onClick={() => { setDayIdx(i); setLightbox(null) }}
+                    className={`rounded-full px-5 py-2 text-sm font-bold transition ${
+                      i === dayIdx
+                        ? 'bg-april-lime text-white shadow-soft'
+                        : 'border border-april-navy/15 bg-white text-april-navy-soft hover:border-april-lime/40'
+                    }`}
+                  >
+                    {d.label}
+                    <span className={`ml-1.5 text-xs font-semibold ${i === dayIdx ? 'text-white/80' : 'text-april-navy-soft/70'}`}>
+                      {d.photos.length}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="mt-4 text-center text-xs text-april-navy-soft">
+                {GALLERY_DAYS[dayIdx]?.label} · 사진 {photos.length}장
+              </p>
+
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {photos.map((photo, i) => (
+                  <button
+                    key={photo.name}
+                    onClick={() => setLightbox(i)}
+                    className="group relative aspect-square overflow-hidden rounded-2xl bg-white shadow-soft"
+                  >
+                    <img
+                      src={photo.src}
+                      alt={`캠프 사진 ${i + 1}`}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    />
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </section>
       )}
 
       {/* 라이트박스 */}
-      {lightbox !== null && GALLERY_PHOTOS[lightbox] && (
+      {lightbox !== null && photos[lightbox] && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
           onClick={() => setLightbox(null)}
@@ -1584,26 +1634,26 @@ function GalleryPage() {
           </button>
           <button
             className="absolute left-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25 sm:left-6"
-            onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i - 1 + GALLERY_PHOTOS.length) % GALLERY_PHOTOS.length) }}
+            onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i - 1 + photos.length) % photos.length) }}
             aria-label="이전"
           >
             ‹
           </button>
           <img
-            src={GALLERY_PHOTOS[lightbox].src}
+            src={photos[lightbox].src}
             alt={`캠프 사진 ${lightbox + 1}`}
             className="max-h-[85vh] max-w-full rounded-2xl object-contain"
             onClick={(e) => e.stopPropagation()}
           />
           <button
             className="absolute right-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25 sm:right-6"
-            onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i + 1) % GALLERY_PHOTOS.length) }}
+            onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i + 1) % photos.length) }}
             aria-label="다음"
           >
             ›
           </button>
           <span className="absolute bottom-5 text-sm font-medium text-white/80">
-            {lightbox + 1} / {GALLERY_PHOTOS.length}
+            {lightbox + 1} / {photos.length}
           </span>
         </div>
       )}
