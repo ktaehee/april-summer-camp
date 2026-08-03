@@ -1,4 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+// ─────────────────────────────────────────────────────────────
+// 📸 사진 갤러리 설정
+// 갤러리 비밀번호 — 원하는 값으로 바꾸세요. (학부모님께 이 비밀번호를 안내)
+const GALLERY_PASSWORD = 'april2026'
+// src/gallery/ 폴더에 넣은 사진들을 자동으로 불러옵니다. (파일만 추가하면 갤러리에 나타남)
+const galleryModules = import.meta.glob(
+  './gallery/*.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP}',
+  { eager: true },
+)
+const GALLERY_PHOTOS = Object.keys(galleryModules)
+  .sort()
+  .map((k) => ({ src: galleryModules[k].default, name: k.split('/').pop() }))
+// ─────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────
 // 📌 신청 폼 → 구글 시트 자동 입력 설정
@@ -1404,6 +1418,7 @@ function Header() {
         <nav className="hidden items-center gap-7 text-sm font-semibold text-april-navy md:flex">
           <a href="#program" className="transition hover:text-april-lime-dark">프로그램</a>
           <a href="#activities" className="transition hover:text-april-lime-dark">액티비티</a>
+          <a href="#gallery" className="transition hover:text-april-lime-dark">사진 갤러리</a>
           <a href="#apply" className="transition hover:text-april-lime-dark">신청하기</a>
           <a
             href={`tel:${CAMP_INFO.phone}`}
@@ -1412,12 +1427,14 @@ function Header() {
             전화 상담
           </a>
         </nav>
-        <a
-          href="#apply"
-          className="rounded-full bg-april-lime px-4 py-2 text-sm font-semibold text-white md:hidden"
-        >
-          신청
-        </a>
+        <div className="flex items-center gap-2 md:hidden">
+          <a href="#gallery" className="rounded-full border border-april-navy/15 px-3 py-2 text-sm font-semibold text-april-navy">
+            갤러리
+          </a>
+          <a href="#apply" className="rounded-full bg-april-lime px-4 py-2 text-sm font-semibold text-white">
+            신청
+          </a>
+        </div>
       </div>
     </header>
   )
@@ -1436,7 +1453,178 @@ function Footer() {
   )
 }
 
+function GalleryPage() {
+  const [unlocked, setUnlocked] = useState(
+    () => typeof sessionStorage !== 'undefined' && sessionStorage.getItem('galleryUnlocked') === '1',
+  )
+  const [pw, setPw] = useState('')
+  const [err, setErr] = useState('')
+  const [lightbox, setLightbox] = useState(null) // 열린 사진 index
+
+  const submit = (e) => {
+    e.preventDefault()
+    if (pw === GALLERY_PASSWORD) {
+      sessionStorage.setItem('galleryUnlocked', '1')
+      setUnlocked(true)
+      setErr('')
+    } else {
+      setErr('비밀번호가 올바르지 않습니다. 다시 확인해주세요.')
+    }
+  }
+
+  // 라이트박스 키보드 조작 (ESC 닫기 / ← → 이동)
+  useEffect(() => {
+    if (lightbox === null) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setLightbox(null)
+      else if (e.key === 'ArrowRight') setLightbox((i) => (i + 1) % GALLERY_PHOTOS.length)
+      else if (e.key === 'ArrowLeft') setLightbox((i) => (i - 1 + GALLERY_PHOTOS.length) % GALLERY_PHOTOS.length)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [lightbox])
+
+  return (
+    <div className="min-h-screen bg-april-cream">
+      <header className="sticky top-0 z-40 border-b border-april-navy/5 bg-white/85 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <a href="#" className="transition hover:opacity-80"><AprilLogo /></a>
+          <a
+            href="#"
+            className="rounded-full border-2 border-april-navy/10 bg-white px-4 py-2 text-sm font-semibold text-april-navy transition hover:border-april-lime hover:text-april-lime-dark"
+          >
+            ← 홈으로
+          </a>
+        </div>
+      </header>
+
+      {!unlocked ? (
+        // 🔒 비밀번호 잠금 화면
+        <div className="mx-auto flex max-w-md flex-col items-center px-6 py-24 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-april-lime-soft text-3xl">
+            🔒
+          </div>
+          <h1 className="mt-6 text-2xl font-bold text-april-navy">사진 갤러리</h1>
+          <p className="mt-3 text-sm leading-relaxed text-april-navy-soft">
+            캠프 사진은 학부모님만 보실 수 있어요.
+            <br />
+            안내받으신 <strong className="text-april-navy">비밀번호</strong>를 입력해주세요.
+          </p>
+          <form onSubmit={submit} className="mt-8 w-full">
+            <input
+              type="password"
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              placeholder="비밀번호"
+              className="w-full rounded-xl border border-april-navy/15 bg-white px-4 py-3 text-center text-base text-april-navy focus:border-april-lime focus:outline-none focus:ring-2 focus:ring-april-lime/30"
+            />
+            {err && <p className="mt-3 text-sm font-medium text-red-500">{err}</p>}
+            <button
+              type="submit"
+              className="mt-4 w-full rounded-full bg-april-lime py-3.5 text-base font-bold text-white shadow-soft transition hover:bg-april-lime-dark"
+            >
+              사진 보기 →
+            </button>
+          </form>
+          <p className="mt-6 text-xs text-april-navy-soft">
+            비밀번호는 캠프 담당 선생님께 문의해주세요. ☎ {CAMP_INFO.phone}
+          </p>
+        </div>
+      ) : (
+        // 🖼️ 사진 그리드
+        <section className="mx-auto max-w-6xl px-6 py-14">
+          <div className="text-center">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-april-lime-soft px-3 py-1 text-xs font-semibold uppercase tracking-wider text-april-lime-dark">
+              <span className="h-1.5 w-1.5 rounded-full bg-april-lime" />
+              Gallery
+            </div>
+            <h1 className="text-3xl font-bold text-april-navy sm:text-4xl">캠프 사진 갤러리</h1>
+            <p className="mt-3 text-sm text-april-navy-soft">2026 여름 캠프의 즐거운 순간들 📸</p>
+          </div>
+
+          {GALLERY_PHOTOS.length === 0 ? (
+            <div className="mt-14 rounded-3xl border border-dashed border-april-navy/20 bg-white p-16 text-center">
+              <div className="text-4xl">📷</div>
+              <p className="mt-4 text-base font-semibold text-april-navy">아직 준비 중이에요</p>
+              <p className="mt-2 text-sm text-april-navy-soft">캠프가 시작되면 사진이 이곳에 올라옵니다.</p>
+            </div>
+          ) : (
+            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {GALLERY_PHOTOS.map((photo, i) => (
+                <button
+                  key={photo.name}
+                  onClick={() => setLightbox(i)}
+                  className="group relative aspect-square overflow-hidden rounded-2xl bg-white shadow-soft"
+                >
+                  <img
+                    src={photo.src}
+                    alt={`캠프 사진 ${i + 1}`}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 라이트박스 */}
+      {lightbox !== null && GALLERY_PHOTOS[lightbox] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25"
+            onClick={() => setLightbox(null)}
+            aria-label="닫기"
+          >
+            ✕
+          </button>
+          <button
+            className="absolute left-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25 sm:left-6"
+            onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i - 1 + GALLERY_PHOTOS.length) % GALLERY_PHOTOS.length) }}
+            aria-label="이전"
+          >
+            ‹
+          </button>
+          <img
+            src={GALLERY_PHOTOS[lightbox].src}
+            alt={`캠프 사진 ${lightbox + 1}`}
+            className="max-h-[85vh] max-w-full rounded-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            className="absolute right-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25 sm:right-6"
+            onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i + 1) % GALLERY_PHOTOS.length) }}
+            aria-label="다음"
+          >
+            ›
+          </button>
+          <span className="absolute bottom-5 text-sm font-medium text-white/80">
+            {lightbox + 1} / {GALLERY_PHOTOS.length}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function App() {
+  const [route, setRoute] = useState(
+    () => (typeof window !== 'undefined' ? window.location.hash : ''),
+  )
+  useEffect(() => {
+    const onHash = () => setRoute(window.location.hash)
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
+  if (route.startsWith('#gallery')) {
+    return <GalleryPage />
+  }
+
   return (
     <div className="min-h-screen">
       <Header />
