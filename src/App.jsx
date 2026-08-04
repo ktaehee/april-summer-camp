@@ -33,6 +33,28 @@ const GALLERY_DAYS = (() => {
       photos: byDay[d],
     }))
 })()
+
+// 📝 하루 활동 리포트 — 갤러리에서 해당 날짜 사진 위에 함께 보여준다.
+// 새 날짜는 아래에 day2, day3 ... 형태로 추가하면 자동으로 붙는다.
+const DAY_REPORTS = {
+  day1: {
+    icon: '🏰',
+    theme: 'Sorting Day',
+    title: 'Opening & Sorting Hat',
+    date: '2026년 8월 3일 (월) · 캠프 첫날',
+    intro:
+      '캠프의 문을 여는 첫날, 아이들은 Sorting Ceremony(기숙사 배정식)로 하루를 시작했어요. 선생님이 이름을 부르면 아이가 앞자리에 앉고, 화면에 그 친구의 영어 이름이 크게 떠올라요. 그리고 Sorting Hat을 씌워주는 순간 — 웃음을 참지 못하는 친구, 눈을 꼭 감고 진지하게 기다리는 친구. 아이들에겐 "이제 진짜 시작이구나" 하는 신호였어요.',
+    houses: ['🦁 Gryffindor', '🐍 Slytherin', '🦅 Ravenclaw', '🦡 Hufflepuff'],
+    housesNote:
+      '네 하우스에 배정된 아이들은 앞으로 2주 동안 한 팀으로 움직여요. 활동마다 쌓이는 House Point는 마지막 날 시상식에서 챔피언을 가리게 돼요.',
+    takeaways: [
+      { label: '영어 이름', text: '오늘부터 서로를 영어 이름으로 불러요. 한국어 이름을 잠시 내려놓는 것만으로 영어를 쓰는 마음의 문턱이 낮아져요.' },
+      { label: '소속감', text: '"나는 그리핀도르야" 한마디가 낯선 첫날의 어색함을 빠르게 녹여줬어요.' },
+      { label: '동기', text: 'Stamp & House Point 제도를 안내받으며, 작은 도전 하나하나가 우리 팀의 점수가 된다는 걸 알게 됐어요.' },
+    ],
+    tomorrow: '📰 Day 2 · Media Day — Breaking News · 직접 취재하고 리포트를 쓰고 카메라 앞에서 발표해요.',
+  },
+}
 // ─────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────
@@ -1585,6 +1607,72 @@ function Footer() {
   )
 }
 
+function DayReport({ report }) {
+  if (!report) return null
+  return (
+    <article className="mt-8 overflow-hidden rounded-3xl bg-white shadow-soft">
+      <div className="border-b border-april-navy/10 bg-april-lime-soft/50 px-6 py-5 sm:px-8">
+        <div className="flex items-start gap-4">
+          <span className="text-4xl leading-none">{report.icon}</span>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-april-lime-dark">
+              {report.theme}
+            </p>
+            <h2 className="mt-0.5 text-xl font-bold text-april-navy sm:text-2xl">{report.title}</h2>
+            <p className="mt-1 text-xs text-april-navy-soft">{report.date}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6 px-6 py-6 sm:px-8 sm:py-8">
+        <p className="text-sm leading-relaxed text-april-navy-soft sm:text-base">{report.intro}</p>
+
+        {report.houses && (
+          <div className="rounded-2xl bg-april-cream px-5 py-5">
+            <p className="text-sm font-bold text-april-navy">우리 하우스가 정해졌어요</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {report.houses.map((h) => (
+                <span
+                  key={h}
+                  className="rounded-full bg-white px-3.5 py-1.5 text-sm font-semibold text-april-navy shadow-soft"
+                >
+                  {h}
+                </span>
+              ))}
+            </div>
+            {report.housesNote && (
+              <p className="mt-3 text-xs leading-relaxed text-april-navy-soft">{report.housesNote}</p>
+            )}
+          </div>
+        )}
+
+        {report.takeaways && (
+          <div>
+            <p className="text-sm font-bold text-april-navy">오늘 아이들이 가져간 것</p>
+            <ul className="mt-3 space-y-3">
+              {report.takeaways.map((t) => (
+                <li key={t.label} className="flex gap-3">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-april-lime" />
+                  <p className="text-sm leading-relaxed text-april-navy-soft">
+                    <strong className="font-bold text-april-navy">{t.label}</strong> — {t.text}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {report.tomorrow && (
+          <div className="rounded-2xl border border-dashed border-april-navy/20 px-5 py-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-april-navy-soft">내일은</p>
+            <p className="mt-1 text-sm font-semibold text-april-navy">{report.tomorrow}</p>
+          </div>
+        )}
+      </div>
+    </article>
+  )
+}
+
 function GalleryPage() {
   const [unlocked, setUnlocked] = useState(
     () => typeof sessionStorage !== 'undefined' && sessionStorage.getItem('galleryUnlocked') === '1',
@@ -1708,6 +1796,9 @@ function GalleryPage() {
               <p className="mt-4 text-center text-xs text-april-navy-soft">
                 {GALLERY_DAYS[dayIdx]?.label} · 사진 {photos.length}장
               </p>
+
+              {/* 그날의 활동 리포트 — 사진만 보는 것보다 맥락이 함께 전달된다 */}
+              <DayReport report={DAY_REPORTS[GALLERY_DAYS[dayIdx]?.key]} />
 
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {photos.map((photo, i) => (
