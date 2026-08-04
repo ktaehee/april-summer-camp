@@ -379,6 +379,27 @@ function Hero() {
       <div className="absolute -top-20 -right-10 h-72 w-72 rounded-full bg-april-lime/10 blur-3xl" />
       <div className="absolute -bottom-20 -left-10 h-72 w-72 rounded-full bg-april-sun/20 blur-3xl" />
       <div className="relative mx-auto max-w-6xl px-6">
+        {/* 캠프가 시작되면 학부모의 첫 목적은 사진 확인 — 페이지 최상단에 크게 둔다 */}
+        {APPLICATIONS_CLOSED && (
+          <a
+            href="#gallery"
+            className="group mb-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-april-lime px-6 py-5 text-white shadow-soft transition hover:bg-april-lime-dark"
+          >
+            <span className="flex items-center gap-4">
+              <span className="text-3xl">📸</span>
+              <span>
+                <span className="block text-base font-bold sm:text-lg">캠프 사진이 올라왔어요</span>
+                <span className="block text-sm text-white/85">
+                  안내받으신 비밀번호를 넣으시면 바로 보실 수 있어요
+                </span>
+              </span>
+            </span>
+            <span className="shrink-0 rounded-full bg-white/20 px-5 py-2.5 text-sm font-bold backdrop-blur">
+              사진 보기{' '}
+              <span aria-hidden className="inline-block transition group-hover:translate-x-0.5">→</span>
+            </span>
+          </a>
+        )}
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
             <div className="mb-6 inline-flex items-center gap-3 rounded-full border-2 border-april-lime/50 bg-white/80 px-6 py-3 text-lg font-bold text-april-lime-dark shadow-soft backdrop-blur sm:text-xl">
