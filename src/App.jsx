@@ -49,6 +49,11 @@ const ENROLLED_LEVELS = [
   'Sapling 1', 'Sapling 2', 'JM1', 'JM2',
 ]
 
+// 신청 접수 마감 스위치.
+// true면 신청 CTA·D-DAY 배지·신청폼이 전부 마감 안내로 바뀐다.
+// 다음 기수를 열 때는 이 값을 false로 되돌리고 CAMP_INFO의 날짜만 갈아끼우면 된다.
+const APPLICATIONS_CLOSED = true
+
 const CAMP_INFO = {
   title: '2026 여름 캠프',
   subtitle: '청담에이프릴 마포상암캠퍼스 Summer Camp',
@@ -395,9 +400,13 @@ function Hero() {
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
                 href="#apply"
-                className="inline-flex items-center justify-center rounded-full bg-april-lime px-7 py-3.5 text-base font-bold text-white shadow-soft transition hover:bg-april-lime-dark"
+                className={
+                  APPLICATIONS_CLOSED
+                    ? 'inline-flex items-center justify-center rounded-full bg-april-navy/70 px-7 py-3.5 text-base font-bold text-white shadow-soft transition hover:bg-april-navy'
+                    : 'inline-flex items-center justify-center rounded-full bg-april-lime px-7 py-3.5 text-base font-bold text-white shadow-soft transition hover:bg-april-lime-dark'
+                }
               >
-                지금 신청하기
+                {APPLICATIONS_CLOSED ? '신청 마감 안내' : '지금 신청하기'}
                 <span aria-hidden className="ml-2">→</span>
               </a>
               <a
@@ -467,15 +476,25 @@ function Hero() {
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-april-sun text-lg">
-                  ⏰
+                  {APPLICATIONS_CLOSED ? '🎒' : '⏰'}
                 </div>
-                <div>
-                  <p className="text-xs text-april-navy-soft">1차 신청 마감</p>
-                  <p className="text-sm font-bold text-april-navy">6/30 (화)까지</p>
-                  <p className="mt-0.5 text-xs font-bold text-april-lime-dark">
-                    지금 신청하기 <span className="transition group-hover:translate-x-0.5 inline-block">→</span>
-                  </p>
-                </div>
+                {APPLICATIONS_CLOSED ? (
+                  <div>
+                    <p className="text-xs text-april-navy-soft">2026 여름캠프</p>
+                    <p className="text-sm font-bold text-april-navy">신청 마감되었습니다</p>
+                    <p className="mt-0.5 text-xs font-bold text-april-navy-soft">
+                      다음 캠프 안내받기 <span className="transition group-hover:translate-x-0.5 inline-block">→</span>
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs text-april-navy-soft">1차 신청 마감</p>
+                    <p className="text-sm font-bold text-april-navy">6/30 (화)까지</p>
+                    <p className="mt-0.5 text-xs font-bold text-april-lime-dark">
+                      지금 신청하기 <span className="transition group-hover:translate-x-0.5 inline-block">→</span>
+                    </p>
+                  </div>
+                )}
               </div>
             </a>
           </div>
@@ -1184,6 +1203,77 @@ function Apply() {
             >
               전화 문의 {CAMP_INFO.phone}
             </a>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // 접수 마감 — 신청폼 대신 안내와 연락처만 보여준다.
+  if (APPLICATIONS_CLOSED) {
+    return (
+      <section id="apply" className="bg-april-navy py-20 text-white sm:py-28">
+        <div className="mx-auto max-w-2xl px-6 text-center">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-april-sun" />
+            Applications Closed
+          </div>
+          <h2 className="text-3xl font-bold sm:text-4xl">신청이 마감되었습니다</h2>
+          <p className="mt-4 text-base text-white/70 sm:text-lg">
+            2026 여름캠프 접수가 종료되어 신청서를 받지 않고 있어요.
+            <br />
+            관심 가져주셔서 감사합니다.
+          </p>
+
+          <div className="mt-10 rounded-3xl bg-white p-8 text-left text-april-navy shadow-soft sm:p-10">
+            <p className="text-sm font-bold text-april-lime-dark">진행 중인 캠프</p>
+            <p className="mt-2 text-lg font-bold">{CAMP_INFO.dates}</p>
+            <p className="mt-1 text-sm text-april-navy-soft">{CAMP_INFO.hours}</p>
+
+            <hr className="my-6 border-april-navy/10" />
+
+            <p className="text-sm font-bold text-april-navy">캠프 사진 보기</p>
+            <p className="mt-2 text-sm text-april-navy-soft">
+              참여 학부모님께 안내드린 비밀번호를 넣으시면 사진을 보실 수 있어요.
+            </p>
+            <a
+              href="#gallery"
+              className="mt-4 inline-flex items-center justify-center rounded-full bg-april-navy px-6 py-3 text-sm font-bold text-white transition hover:bg-april-navy/80"
+            >
+              📸 사진 보러 가기
+            </a>
+
+            <hr className="my-6 border-april-navy/10" />
+
+            <p className="text-sm font-bold text-april-navy">
+              다음 캠프 소식이나 정규 과정이 궁금하세요?
+            </p>
+            <p className="mt-2 text-sm text-april-navy-soft">
+              편하게 연락 주시면 상담 도와드릴게요. 레벨테스트도 상시 가능합니다.
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                href={`tel:${CAMP_INFO.phone.replace(/-/g, '')}`}
+                className="inline-flex items-center justify-center rounded-full bg-april-lime px-6 py-3 text-sm font-bold text-white transition hover:bg-april-lime-dark"
+              >
+                📞 {CAMP_INFO.phone}
+              </a>
+              <a
+                href={`mailto:${CAMP_INFO.email}`}
+                className="inline-flex items-center justify-center rounded-full border-2 border-april-navy/10 bg-white px-6 py-3 text-sm font-semibold text-april-navy transition hover:border-april-lime hover:text-april-lime-dark"
+              >
+                ✉️ 이메일 문의
+              </a>
+              <a
+                href={CAMP_INFO.blogUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-full border-2 border-april-navy/10 bg-white px-6 py-3 text-sm font-semibold text-april-navy transition hover:border-april-lime hover:text-april-lime-dark"
+              >
+                📝 블로그 보기
+              </a>
+            </div>
           </div>
         </div>
       </section>
