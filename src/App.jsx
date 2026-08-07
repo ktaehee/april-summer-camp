@@ -10,6 +10,24 @@ const galleryModules = import.meta.glob(
   './gallery/**/*.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP}',
   { eager: true },
 )
+// day 폴더에 mp4/webm을 넣으면 해당 날짜 탭 사진 위에 영상 플레이어로 나타남.
+// ⚠️ 원본이 HEVC(H.265)면 브라우저가 재생 못 함 — ffmpeg로 H.264 변환 후 넣을 것.
+const videoModules = import.meta.glob(
+  './gallery/**/*.{mp4,webm,MP4,WEBM}',
+  { eager: true },
+)
+const GALLERY_VIDEOS = (() => {
+  const byDay = {}
+  Object.keys(videoModules)
+    .sort()
+    .forEach((k) => {
+      const m = k.match(/\.\/gallery\/([^/]+)\//)
+      const day = m ? m[1] : '기타'
+      if (!byDay[day]) byDay[day] = []
+      byDay[day].push({ src: videoModules[k].default, name: k.split('/').pop() })
+    })
+  return byDay
+})()
 const GALLERY_DAYS = (() => {
   const byDay = {}
   Object.keys(galleryModules)
@@ -1866,8 +1884,35 @@ function GalleryPage() {
                 {GALLERY_DAYS[dayIdx]?.label} · 사진 {photos.length}장
               </p>
 
+              {/* 업로드 지연 안내 — 모든 날짜 탭 공통 */}
+              <div className="mx-auto mt-5 max-w-2xl rounded-2xl bg-april-lime-soft px-5 py-4 text-center">
+                <p className="text-sm leading-relaxed text-april-navy">
+                  📷 각 날짜의 사진이 실제로는 훨씬 많아요! 정리 작업이 조금 늦어지고 있어요 — 곧 더
+                  올려드릴게요. 조금만 기다려주세요 🙏
+                </p>
+              </div>
+
               {/* 그날의 활동 리포트 — 사진만 보는 것보다 맥락이 함께 전달된다 */}
               <DayReport report={DAY_REPORTS[GALLERY_DAYS[dayIdx]?.key]} />
+
+              {/* 🎬 활동 영상 — 해당 날짜 폴더에 mp4가 있으면 표시 */}
+              {(GALLERY_VIDEOS[GALLERY_DAYS[dayIdx]?.key] || []).length > 0 && (
+                <div className="mt-6 space-y-4">
+                  {GALLERY_VIDEOS[GALLERY_DAYS[dayIdx].key].map((v) => (
+                    <video
+                      key={v.name}
+                      src={v.src}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="w-full rounded-3xl bg-black shadow-soft"
+                    />
+                  ))}
+                  <p className="text-center text-xs text-april-navy-soft">
+                    🎬 활동 영상 맛보기예요 · 영상 원본은 정리해서 곧 전달드릴 예정이에요
+                  </p>
+                </div>
+              )}
 
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {photos.map((photo, i) => (
