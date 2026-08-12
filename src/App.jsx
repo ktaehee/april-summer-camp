@@ -1830,8 +1830,10 @@ function GalleryPage() {
   const [err, setErr] = useState('')
   const [dayIdx, setDayIdx] = useState(Math.max(GALLERY_DAYS.length - 1, 0)) // 기본: 최근 날짜
   const [lightbox, setLightbox] = useState(null) // 열린 사진 index
+  const [videoLightbox, setVideoLightbox] = useState(null) // 열린 동영상 index
 
   const photos = GALLERY_DAYS[dayIdx]?.photos || []
+  const dayVideos = GALLERY_VIDEOS[GALLERY_DAYS[dayIdx]?.key] || []
 
   const submit = (e) => {
     e.preventDefault()
@@ -1927,7 +1929,7 @@ function GalleryPage() {
                 {GALLERY_DAYS.map((d, i) => (
                   <button
                     key={d.key}
-                    onClick={() => { setDayIdx(i); setLightbox(null) }}
+                    onClick={() => { setDayIdx(i); setLightbox(null); setVideoLightbox(null) }}
                     className={`rounded-full px-5 py-2 text-sm font-bold transition ${
                       i === dayIdx
                         ? 'bg-april-lime text-white shadow-soft'
@@ -1957,21 +1959,43 @@ function GalleryPage() {
               {/* 그날의 활동 리포트 — 사진만 보는 것보다 맥락이 함께 전달된다 */}
               <DayReport report={DAY_REPORTS[GALLERY_DAYS[dayIdx]?.key]} />
 
-              {/* 🎬 활동 영상 — 해당 날짜 폴더에 mp4가 있으면 표시 */}
-              {(GALLERY_VIDEOS[GALLERY_DAYS[dayIdx]?.key] || []).length > 0 && (
-                <div className="mt-6 space-y-4">
-                  {GALLERY_VIDEOS[GALLERY_DAYS[dayIdx].key].map((v) => (
-                    <video
-                      key={v.name}
-                      src={v.src}
-                      controls
-                      playsInline
-                      preload="metadata"
-                      className="w-full rounded-3xl bg-black shadow-soft"
-                    />
-                  ))}
-                  <p className="text-center text-xs text-april-navy-soft">
-                    🎬 활동 영상 맛보기예요 · 영상 원본은 정리해서 곧 전달드릴 예정이에요
+              {/* 🎬 활동 영상 — 첫 장면 + 이름 썸네일, 클릭하면 크게 재생 */}
+              {dayVideos.length > 0 && (
+                <div className="mt-8">
+                  <p className="mb-3 text-center text-sm font-bold text-april-navy">
+                    🎬 활동 영상 ({dayVideos.length}) · 눌러서 재생하세요
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {dayVideos.map((v, i) => (
+                      <button
+                        key={v.name}
+                        onClick={() => setVideoLightbox(i)}
+                        className="group relative aspect-square overflow-hidden rounded-2xl bg-black shadow-soft"
+                      >
+                        {/* 첫 장면 미리보기 (#t=0.1 로 첫 프레임 표시) */}
+                        <video
+                          src={v.src + '#t=0.1'}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          tabIndex={-1}
+                          className="pointer-events-none h-full w-full object-cover opacity-90 transition group-hover:scale-105"
+                        />
+                        {/* 재생 아이콘 */}
+                        <span className="absolute inset-0 flex items-center justify-center">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/85 pl-1 text-xl text-april-navy shadow-soft transition group-hover:scale-110">
+                            ▶
+                          </span>
+                        </span>
+                        {/* 이름 라벨 */}
+                        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6 text-center text-sm font-bold text-white">
+                          {v.name.replace(/\.[^.]+$/, '')}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-center text-xs text-april-navy-soft">
+                    영상 원본은 정리해서 곧 전달드릴 예정이에요
                   </p>
                 </div>
               )}
@@ -2032,6 +2056,56 @@ function GalleryPage() {
           </button>
           <span className="absolute bottom-5 text-sm font-medium text-white/80">
             {lightbox + 1} / {photos.length}
+          </span>
+        </div>
+      )}
+
+      {/* 동영상 라이트박스 */}
+      {videoLightbox !== null && dayVideos[videoLightbox] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setVideoLightbox(null)}
+        >
+          <button
+            className="absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25"
+            onClick={() => setVideoLightbox(null)}
+            aria-label="닫기"
+          >
+            ✕
+          </button>
+          {dayVideos.length > 1 && (
+            <button
+              className="absolute left-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25 sm:left-6"
+              onClick={(e) => { e.stopPropagation(); setVideoLightbox((i) => (i - 1 + dayVideos.length) % dayVideos.length) }}
+              aria-label="이전"
+            >
+              ‹
+            </button>
+          )}
+          <div className="flex max-w-full flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <video
+              key={dayVideos[videoLightbox].src}
+              src={dayVideos[videoLightbox].src}
+              controls
+              autoPlay
+              playsInline
+              className="max-h-[80vh] max-w-full rounded-2xl bg-black"
+            />
+            <p className="text-base font-bold text-white">
+              {dayVideos[videoLightbox].name.replace(/\.[^.]+$/, '')}
+            </p>
+          </div>
+          {dayVideos.length > 1 && (
+            <button
+              className="absolute right-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25 sm:right-6"
+              onClick={(e) => { e.stopPropagation(); setVideoLightbox((i) => (i + 1) % dayVideos.length) }}
+              aria-label="다음"
+            >
+              ›
+            </button>
+          )}
+          <span className="absolute bottom-5 text-sm font-medium text-white/80">
+            {videoLightbox + 1} / {dayVideos.length}
           </span>
         </div>
       )}
