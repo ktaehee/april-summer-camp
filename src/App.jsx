@@ -2005,20 +2005,30 @@ function GalleryPage() {
               )}
 
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {photos.map((photo, i) => (
-                  <button
-                    key={photo.name}
-                    onClick={() => setLightbox(i)}
-                    className="group relative aspect-square overflow-hidden rounded-2xl bg-white shadow-soft"
-                  >
-                    <img
-                      src={photo.src}
-                      alt={`캠프 사진 ${i + 1}`}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    />
-                  </button>
-                ))}
+                {photos.map((photo, i) => {
+                  // 파일명 앞 "01_" 같은 순서 접두어를 떼고, 숫자만 남으면 라벨 없음(개별 사진)
+                  const label = photo.name.replace(/\.[^.]+$/, '').replace(/^\d+[_-]?/, '')
+                  const showLabel = label && !/^\d+$/.test(label)
+                  return (
+                    <button
+                      key={photo.name}
+                      onClick={() => setLightbox(i)}
+                      className="group relative aspect-square overflow-hidden rounded-2xl bg-white shadow-soft"
+                    >
+                      <img
+                        src={photo.src}
+                        alt={`캠프 사진 ${i + 1}`}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      />
+                      {showLabel && (
+                        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6 text-center text-sm font-bold text-white">
+                          {label}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </>
           )}
