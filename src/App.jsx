@@ -38,6 +38,10 @@ const GALLERY_DAYS = (() => {
       if (!byDay[day]) byDay[day] = []
       byDay[day].push({ src: galleryModules[k].default, name: k.split('/').pop() })
     })
+  // 사진이 없고 영상만 있는 날짜도 탭에 포함 (사진 삭제해도 영상 탭 유지)
+  Object.keys(GALLERY_VIDEOS).forEach((day) => {
+    if (!byDay[day]) byDay[day] = []
+  })
   return Object.keys(byDay)
     .sort((a, b) => {
       const na = parseInt(a.replace(/\D/g, ''), 10)
