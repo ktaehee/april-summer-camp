@@ -38,6 +38,10 @@ const GALLERY_DAYS = (() => {
       if (!byDay[day]) byDay[day] = []
       byDay[day].push({ src: galleryModules[k].default, name: k.split('/').pop() })
     })
+  // 사진이 없고 영상만 있는 날짜도 탭에 포함 (사진 삭제해도 영상 탭 유지)
+  Object.keys(GALLERY_VIDEOS).forEach((day) => {
+    if (!byDay[day]) byDay[day] = []
+  })
   return Object.keys(byDay)
     .sort((a, b) => {
       const na = parseInt(a.replace(/\D/g, ''), 10)
@@ -61,10 +65,10 @@ const DAY_REPORTS = {
     title: 'Opening & Sorting Hat',
     date: '2026년 8월 3일 (월) · 캠프 첫날',
     intro:
-      '캠프의 문을 여는 첫날, 아이들은 Sorting Ceremony(기숙사 배정식)로 하루를 시작했어요. 선생님이 이름을 부르면 아이가 앞자리에 앉고, 화면에 그 친구의 영어 이름이 크게 떠올라요. 그리고 Sorting Hat을 씌워주는 순간 — 웃음을 참지 못하는 친구, 눈을 꼭 감고 진지하게 기다리는 친구. 아이들에겐 "이제 진짜 시작이구나" 하는 신호였어요.',
+      '캠프의 문을 여는 첫날, 아이들은 2주를 함께할 원어민 선생님들과 인사를 나눈 뒤 Sorting Ceremony(기숙사 배정식)로 하루를 시작했어요. 선생님이 이름을 부르면 아이가 앞자리에 앉고, 화면에 그 친구의 영어 이름이 크게 떠올라요. 그리고 Sorting Hat을 씌워주는 순간 — 웃음을 참지 못하는 친구, 눈을 꼭 감고 진지하게 기다리는 친구. 아이들에겐 "이제 진짜 시작이구나" 하는 신호였어요.',
     houses: ['🦁 Gryffindor', '🐍 Slytherin', '🦅 Ravenclaw', '🦡 Hufflepuff'],
     housesNote:
-      '네 하우스에 배정된 아이들은 앞으로 2주 동안 한 팀으로 움직여요. 활동마다 쌓이는 House Point는 마지막 날 시상식에서 챔피언을 가리게 돼요.',
+      '네 하우스에 배정된 아이들은 앞으로 2주 동안 한 팀으로 움직여요. 하우스마다 회장과 부회장도 직접 정했어요. 활동마다 쌓이는 House Point는 마지막 날 시상식에서 챔피언을 가리게 돼요.',
     takeaways: [
       { label: '영어 이름', text: '오늘부터 서로를 영어 이름으로 불러요. 한국어 이름을 잠시 내려놓는 것만으로 영어를 쓰는 마음의 문턱이 낮아져요.' },
       { label: '소속감', text: '"나는 그리핀도르야" 한마디가 낯선 첫날의 어색함을 빠르게 녹여줬어요.' },
@@ -81,16 +85,16 @@ const DAY_REPORTS = {
       '레벨별로 나뉘어 직접 취재하고, 리포트를 쓰고, 카메라 앞에서 뉴스를 전하는 하루였어요. 어제 하우스가 정해지며 서로 이름을 익힌 아이들이라, 오늘은 팀으로 머리를 맞대는 모습이 훨씬 자연스러웠어요.',
     takeaways: [
       {
+        label: '기자가 되어 본 하루',
+        text: '레벨별로 나뉘어 직접 취재하고, 영어로 기사를 쓰고, 카메라 앞에서 뉴스로 전했어요. 읽고 쓰는 영어와 말하는 영어가 하나로 이어지는 하루였어요.',
+      },
+      {
         label: '쉬는 시간도 영어로',
         text: '간식 시간 팻말도 "Snack Time", 점심 배식대에는 "Food"와 "Bon appétit". 수업이 끝나도 눈에 들어오는 글자가 계속 영어라, 아이들이 자연스럽게 영어 환경 안에 머물러요.',
       },
       {
         label: '스스로 하는 정리',
         text: '배식대 옆에 "food waste"와 "disposable waste" 안내를 영어로 붙여두고, 다 먹은 뒤 아이들이 직접 분리해서 버렸어요. 생활 속 단어를 몸으로 익히는 시간이에요.',
-      },
-      {
-        label: '줄 서서 기다리기',
-        text: '간식도 점심도 한 명씩 차례를 기다렸다가 받았어요. 첫날보다 훨씬 질서 있게, 서로 자리를 챙겨주며 움직였어요.',
       },
     ],
     tomorrow: '🎲 Day 3 · Game Day — Board Game Cafe · 영어로만 진행되는 보드게임 토너먼트가 열려요. (House 포인트 반영)',
@@ -112,6 +116,10 @@ const DAY_REPORTS = {
         text: '젠가도 체스도 모노폴리도 결국 차례를 기다리는 게임이에요. 상대의 수를 지켜보며 기다리는 법, 규칙 안에서 이기는 법을 함께 연습했어요.',
       },
       {
+        label: '우리 하우스를 위해',
+        text: '그냥 노는 게임이 아니라 토너먼트였어요. 이긴 만큼 우리 하우스 점수가 올라가니, 응원도 아쉬움도 자연스럽게 영어로 터져 나왔어요.',
+      },
+      {
         label: '점심도 함께',
         text: '"Food" 팻말 아래 줄 서서 점심을 받았어요. 사흘째가 되니 배식 줄이 제법 익숙하고 의젓해요.',
       },
@@ -124,8 +132,16 @@ const DAY_REPORTS = {
     title: 'T-shirt + Shark Tank',
     date: '2026년 8월 6일 (목) · 캠프 넷째 날',
     intro:
-      '오늘은 아이들이 디자이너가 된 날이에요. 새하얀 티셔츠와 패브릭 마커 16색을 받아 들고, 각자 세상에 하나뿐인 티셔츠를 만들었어요. 마인크래프트, 상어, 무지개와 하트 — 그려 넣은 그림도 아이들 수만큼 제각각이에요. 완성한 티셔츠를 그 자리에서 입고, 조명 앞에서 선생님들과 단체 사진도 찍었어요. 입을 수 있는 작품이라 오늘의 결과물은 집까지 따라가요.',
+      '오늘은 아이들이 디자이너이자 사업가가 된 날이에요. 새하얀 티셔츠와 패브릭 마커 16색을 받아 들고, 각자 세상에 하나뿐인 티셔츠를 만들었어요. 마인크래프트, 상어, 무지개와 하트 — 그려 넣은 그림도 아이들 수만큼 제각각이에요. 그리고 이어진 Shark Tank. 만드는 것으로 끝이 아니라, 자기 티셔츠를 하나의 브랜드로 소개하고 투자자 앞에서 파는 자리예요. 조명과 카메라가 세팅되고 심사위원 선생님들이 앉은 앞으로, 아이들이 한 명씩 나가 준비한 피칭을 했어요. 원고를 두 손에 꼭 쥐고 선 아이, 발표를 마치고 악수를 나누며 활짝 웃는 아이 — 긴장과 뿌듯함이 같이 담긴 시간이었어요.',
     takeaways: [
+      {
+        label: '파는 말은 다르다',
+        text: '"이건 제가 그렸어요"에서 멈추지 않고, 왜 좋은지, 누가 사면 좋을지까지 말해야 하는 자리였어요. 설명하는 영어와 설득하는 영어가 어떻게 다른지 몸으로 겪었어요.',
+      },
+      {
+        label: '심사위원 앞에 서기',
+        text: '조명과 카메라까지 갖춘 진짜 피칭 무대였어요. 자기 차례를 기다렸다가 앞에 나가 발표하고, 끝나면 악수를 나눴어요. 그 악수 한 번에 아이들 표정이 확 펴졌어요.',
+      },
       {
         label: '내가 만든 걸 입는 경험',
         text: '그림을 그리는 데서 끝나지 않고, 완성한 티셔츠를 바로 입고 카메라 앞에 섰어요. 내 손으로 만든 것을 자랑스러워하는 표정들이 사진에 그대로 담겼어요.',
@@ -140,6 +156,56 @@ const DAY_REPORTS = {
       },
     ],
     tomorrow: '✉️ Day 5 · Postcard Day — Postcard Art + Letter · 엽서를 만들고 가족에게 영어 편지를 써요.',
+  },
+  day5: {
+    icon: '✉️',
+    theme: 'Postcard Day',
+    title: 'Postcard Art + Letter',
+    date: '2026년 8월 7일 (금) · 캠프 다섯째 날',
+    intro:
+      '1주차 마지막 날은 손으로 꾹꾹 눌러쓰는 하루였어요. 아이들은 각자 여름 감성의 엽서를 꾸미고 그 위에 영어로 편지를 썼어요. 반짝이는 하트와 별, 색색의 보석 스티커로 테두리를 채우고, 남은 자리에는 한 줄 한 줄 자기 문장을 적어 넣었어요. 편지의 수신인은 레벨에 따라 달랐어요. 부모님께 쓴 아이도, 미래의 자기 자신에게 쓴 아이도 있어요. 미래의 나에게 보낸 편지는 타임캡슐로 봉해 두었어요.',
+    takeaways: [
+      {
+        label: '읽는 사람이 있는 영어',
+        text: '문제집의 빈칸이 아니라 받는 사람이 있는 글이에요. 누구에게 무엇을 전할지 정하고 나면, 쓰고 싶은 문장이 먼저 떠올라요.',
+      },
+      {
+        label: '미래의 나에게',
+        text: '타임캡슐에 넣을 편지를 쓰려면 지금의 나를 한 번 돌아봐야 해요. 영어로 쓰는 김에 마음도 한 번 정리하고 가는 시간이었어요.',
+      },
+      {
+        label: '꾸미는 시간도 수업',
+        text: '스티커를 어디에 붙일지 고르는 동안에도 아이들은 계속 영어로 이야기를 나눴어요. 손이 바쁜 활동일수록 말은 오히려 편하게 나와요.',
+      },
+      {
+        label: '집으로 가는 작품',
+        text: '완성한 엽서는 아이가 직접 전해드릴 거예요. 캠프에서 무엇을 했는지 아이의 글씨로 확인하실 수 있어요.',
+      },
+    ],
+    tomorrow: '🏃 Day 6 · Adventure Day — Amazing Race · 주말을 쉬고, 월요일에는 학원 전체를 무대로 영어 미션 투어를 해요. (House 포인트 반영)',
+  },
+  day7: {
+    icon: '🎤',
+    theme: 'Talent Day',
+    title: "April's Got Talent",
+    date: '2026년 8월 11일 (화) · 캠프 일곱째 날',
+    intro:
+      "April's Got Talent가 열린 날이에요. 노래, 댄스 — 저마다 준비한 장기를 무대에서 보여줬어요. 아이들 손에는 순서가 빼곡히 적힌 프로그램지가 들려 있었고, 객석에서는 하우스 응원 피켓이 올라갔어요. \"GO SLYTHERIN\", \"Ravenclaw\" — 아이들이 직접 만들어 든 피켓이에요. 무대가 끝난 뒤에는 바닥 가득 흩어진 색종이 사이에서, 선생님들까지 다 같이 모여 사진을 찍었어요.",
+    takeaways: [
+      {
+        label: '앞에 나서는 용기',
+        text: '사람들 앞에서 영어로 무언가를 보여주는 건 어른에게도 쉽지 않아요. 2주 가까이 같이 지낸 친구들 앞이라 아이들이 한 걸음 더 나갈 수 있었어요.',
+      },
+      {
+        label: '응원하는 쪽도 주인공',
+        text: '피켓을 만들고 하우스 이름을 외치는 것도 오늘의 활동이었어요. 무대에 서지 않는 순간에도 아이들은 계속 영어 안에 머물러 있었어요.',
+      },
+      {
+        label: '2주가 만든 사이',
+        text: '첫날엔 서로 이름도 몰랐던 아이들이, 이제 팀 이름을 목청껏 외쳐요. 간식 시간에 카메라를 보고 다 같이 브이를 하는 모습에서도 그동안 쌓인 시간이 보여요.',
+      },
+    ],
+    tomorrow: '🌍 Day 8 · World Citizen Day — Mini UN · 세계 시민이 되어 글로벌 이슈를 놓고 영어로 토론하고 발표해요.',
   },
 }
 // ─────────────────────────────────────────────────────────────
@@ -1768,8 +1834,10 @@ function GalleryPage() {
   const [err, setErr] = useState('')
   const [dayIdx, setDayIdx] = useState(Math.max(GALLERY_DAYS.length - 1, 0)) // 기본: 최근 날짜
   const [lightbox, setLightbox] = useState(null) // 열린 사진 index
+  const [videoLightbox, setVideoLightbox] = useState(null) // 열린 동영상 index
 
   const photos = GALLERY_DAYS[dayIdx]?.photos || []
+  const dayVideos = GALLERY_VIDEOS[GALLERY_DAYS[dayIdx]?.key] || []
 
   const submit = (e) => {
     e.preventDefault()
@@ -1865,7 +1933,7 @@ function GalleryPage() {
                 {GALLERY_DAYS.map((d, i) => (
                   <button
                     key={d.key}
-                    onClick={() => { setDayIdx(i); setLightbox(null) }}
+                    onClick={() => { setDayIdx(i); setLightbox(null); setVideoLightbox(null) }}
                     className={`rounded-full px-5 py-2 text-sm font-bold transition ${
                       i === dayIdx
                         ? 'bg-april-lime text-white shadow-soft'
@@ -1895,40 +1963,72 @@ function GalleryPage() {
               {/* 그날의 활동 리포트 — 사진만 보는 것보다 맥락이 함께 전달된다 */}
               <DayReport report={DAY_REPORTS[GALLERY_DAYS[dayIdx]?.key]} />
 
-              {/* 🎬 활동 영상 — 해당 날짜 폴더에 mp4가 있으면 표시 */}
-              {(GALLERY_VIDEOS[GALLERY_DAYS[dayIdx]?.key] || []).length > 0 && (
-                <div className="mt-6 space-y-4">
-                  {GALLERY_VIDEOS[GALLERY_DAYS[dayIdx].key].map((v) => (
-                    <video
-                      key={v.name}
-                      src={v.src}
-                      controls
-                      playsInline
-                      preload="metadata"
-                      className="w-full rounded-3xl bg-black shadow-soft"
-                    />
-                  ))}
-                  <p className="text-center text-xs text-april-navy-soft">
-                    🎬 활동 영상 맛보기예요 · 영상 원본은 정리해서 곧 전달드릴 예정이에요
+              {/* 🎬 활동 영상 — 첫 장면 + 이름 썸네일, 클릭하면 크게 재생 */}
+              {dayVideos.length > 0 && (
+                <div className="mt-8">
+                  <p className="mb-3 text-center text-sm font-bold text-april-navy">
+                    🎬 활동 영상 ({dayVideos.length}) · 눌러서 재생하세요
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {dayVideos.map((v, i) => (
+                      <button
+                        key={v.name}
+                        onClick={() => setVideoLightbox(i)}
+                        className="group relative aspect-square overflow-hidden rounded-2xl bg-black shadow-soft"
+                      >
+                        {/* 첫 장면 미리보기 (#t=0.1 로 첫 프레임 표시) */}
+                        <video
+                          src={v.src + '#t=0.1'}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          tabIndex={-1}
+                          className="pointer-events-none h-full w-full object-cover opacity-90 transition group-hover:scale-105"
+                        />
+                        {/* 재생 아이콘 */}
+                        <span className="absolute inset-0 flex items-center justify-center">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/85 pl-1 text-xl text-april-navy shadow-soft transition group-hover:scale-110">
+                            ▶
+                          </span>
+                        </span>
+                        {/* 이름 라벨 */}
+                        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6 text-center text-sm font-bold text-white">
+                          {v.name.replace(/\.[^.]+$/, '')}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-center text-xs text-april-navy-soft">
+                    영상 원본은 정리해서 곧 전달드릴 예정이에요
                   </p>
                 </div>
               )}
 
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {photos.map((photo, i) => (
-                  <button
-                    key={photo.name}
-                    onClick={() => setLightbox(i)}
-                    className="group relative aspect-square overflow-hidden rounded-2xl bg-white shadow-soft"
-                  >
-                    <img
-                      src={photo.src}
-                      alt={`캠프 사진 ${i + 1}`}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    />
-                  </button>
-                ))}
+                {photos.map((photo, i) => {
+                  // 파일명 앞 "01_" 같은 순서 접두어를 떼고, 숫자만 남으면 라벨 없음(개별 사진)
+                  const label = photo.name.replace(/\.[^.]+$/, '').replace(/^\d+[_-]?/, '')
+                  const showLabel = label && !/^\d+$/.test(label)
+                  return (
+                    <button
+                      key={photo.name}
+                      onClick={() => setLightbox(i)}
+                      className="group relative aspect-square overflow-hidden rounded-2xl bg-white shadow-soft"
+                    >
+                      <img
+                        src={photo.src}
+                        alt={`캠프 사진 ${i + 1}`}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      />
+                      {showLabel && (
+                        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6 text-center text-sm font-bold text-white">
+                          {label}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </>
           )}
@@ -1970,6 +2070,56 @@ function GalleryPage() {
           </button>
           <span className="absolute bottom-5 text-sm font-medium text-white/80">
             {lightbox + 1} / {photos.length}
+          </span>
+        </div>
+      )}
+
+      {/* 동영상 라이트박스 */}
+      {videoLightbox !== null && dayVideos[videoLightbox] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setVideoLightbox(null)}
+        >
+          <button
+            className="absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25"
+            onClick={() => setVideoLightbox(null)}
+            aria-label="닫기"
+          >
+            ✕
+          </button>
+          {dayVideos.length > 1 && (
+            <button
+              className="absolute left-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25 sm:left-6"
+              onClick={(e) => { e.stopPropagation(); setVideoLightbox((i) => (i - 1 + dayVideos.length) % dayVideos.length) }}
+              aria-label="이전"
+            >
+              ‹
+            </button>
+          )}
+          <div className="flex max-w-full flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <video
+              key={dayVideos[videoLightbox].src}
+              src={dayVideos[videoLightbox].src}
+              controls
+              autoPlay
+              playsInline
+              className="max-h-[80vh] max-w-full rounded-2xl bg-black"
+            />
+            <p className="text-base font-bold text-white">
+              {dayVideos[videoLightbox].name.replace(/\.[^.]+$/, '')}
+            </p>
+          </div>
+          {dayVideos.length > 1 && (
+            <button
+              className="absolute right-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/25 sm:right-6"
+              onClick={(e) => { e.stopPropagation(); setVideoLightbox((i) => (i + 1) % dayVideos.length) }}
+              aria-label="다음"
+            >
+              ›
+            </button>
+          )}
+          <span className="absolute bottom-5 text-sm font-medium text-white/80">
+            {videoLightbox + 1} / {dayVideos.length}
           </span>
         </div>
       )}
