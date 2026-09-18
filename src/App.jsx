@@ -1942,7 +1942,7 @@ function GalleryPage() {
                   >
                     {d.label}
                     <span className={`ml-1.5 text-xs font-semibold ${i === dayIdx ? 'text-white/80' : 'text-april-navy-soft/70'}`}>
-                      {d.photos.length > 0 ? d.photos.length : (GALLERY_VIDEOS[d.key]?.length || 0)}
+                      {d.photos.length + (GALLERY_VIDEOS[d.key]?.length || 0)}
                     </span>
                   </button>
                 ))}
