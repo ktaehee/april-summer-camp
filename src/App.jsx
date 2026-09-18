@@ -82,7 +82,7 @@ const DAY_REPORTS = {
     title: 'Breaking News',
     date: '2026년 8월 4일 (화) · 캠프 둘째 날',
     intro:
-      '레벨별로 나뉘어 직접 취재하고, 리포트를 쓰고, 카메라 앞에서 뉴스를 전하는 하루였어요. 어제 하우스가 정해지며 서로 이름을 익힌 아이들이라, 오늘은 팀으로 머리를 맞대는 모습이 훨씬 자연스러웠어요.',
+      '오늘은 아이들이 직접 기자가 되어 취재하고, 리포트를 작성한 뒤 카메라 앞에서 뉴스를 전해보는 시간을 가졌어요. 또한 다양한 직업의 인물이 되어 친구들의 질문에 답하는 Interviewee 역할도 경험해보았답니다.\n\n영어로 서로 질문하고 대답하는 과정에서 5W1H Questions(육하원칙)를 자연스럽고 재미있게 익히고, 캠프에 참여한 다른 레벨의 친구들과도 함께 소통하며 유대감을 쌓을 수 있었습니다.',
     takeaways: [
       {
         label: '기자가 되어 본 하루',
@@ -1778,7 +1778,7 @@ function DayReport({ report }) {
       </div>
 
       <div className="space-y-6 px-6 py-6 sm:px-8 sm:py-8">
-        <p className="text-sm leading-relaxed text-april-navy-soft sm:text-base">{report.intro}</p>
+        <p className="whitespace-pre-line text-sm leading-relaxed text-april-navy-soft sm:text-base">{report.intro}</p>
 
         {report.houses && (
           <div className="rounded-2xl bg-april-cream px-5 py-5">
