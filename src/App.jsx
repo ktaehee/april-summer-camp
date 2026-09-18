@@ -1942,23 +1942,28 @@ function GalleryPage() {
                   >
                     {d.label}
                     <span className={`ml-1.5 text-xs font-semibold ${i === dayIdx ? 'text-white/80' : 'text-april-navy-soft/70'}`}>
-                      {d.photos.length}
+                      {d.photos.length > 0 ? d.photos.length : (GALLERY_VIDEOS[d.key]?.length || 0)}
                     </span>
                   </button>
                 ))}
               </div>
 
               <p className="mt-4 text-center text-xs text-april-navy-soft">
-                {GALLERY_DAYS[dayIdx]?.label} · 사진 {photos.length}장
+                {GALLERY_DAYS[dayIdx]?.label} · {[
+                  photos.length > 0 ? `사진 ${photos.length}장` : null,
+                  dayVideos.length > 0 ? `영상 ${dayVideos.length}개` : null,
+                ].filter(Boolean).join(' · ') || '준비 중'}
               </p>
 
-              {/* 업로드 지연 안내 — 모든 날짜 탭 공통 */}
-              <div className="mx-auto mt-5 max-w-2xl rounded-2xl bg-april-lime-soft px-5 py-4 text-center">
-                <p className="text-sm leading-relaxed text-april-navy">
-                  📷 각 날짜의 사진이 실제로는 훨씬 많아요! 정리 작업이 조금 늦어지고 있어요 — 곧 더
-                  올려드릴게요. 조금만 기다려주세요 🙏
-                </p>
-              </div>
+              {/* 업로드 지연 안내 — 사진이 있는 날짜에만 표시 */}
+              {photos.length > 0 && (
+                <div className="mx-auto mt-5 max-w-2xl rounded-2xl bg-april-lime-soft px-5 py-4 text-center">
+                  <p className="text-sm leading-relaxed text-april-navy">
+                    📷 각 날짜의 사진이 실제로는 훨씬 많아요! 정리 작업이 조금 늦어지고 있어요 — 곧 더
+                    올려드릴게요. 조금만 기다려주세요 🙏
+                  </p>
+                </div>
+              )}
 
               {/* 그날의 활동 리포트 — 사진만 보는 것보다 맥락이 함께 전달된다 */}
               <DayReport report={DAY_REPORTS[GALLERY_DAYS[dayIdx]?.key]} />
