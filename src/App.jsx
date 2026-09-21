@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react'
+import highlightPoster from './assets/highlight-poster.jpg'
 
 // ─────────────────────────────────────────────────────────────
 // 📸 사진 갤러리 설정
 // 갤러리 비밀번호 — 원하는 값으로 바꾸세요. (학부모님께 이 비밀번호를 안내)
 const GALLERY_PASSWORD = 'april2026'
+// 🎬 영상 표지(썸네일) 이미지 — 파일명별로 지정. (없으면 영상 첫 장면 사용)
+const VIDEO_POSTERS = {
+  'Highlight.mp4': highlightPoster,
+}
 // src/gallery/day1, day2 ... 폴더에 넣은 사진들을 날짜별로 자동으로 불러옵니다.
 // (day 폴더에 사진 파일만 추가하면 해당 날짜 탭에 나타남)
 const galleryModules = import.meta.glob(
@@ -44,6 +49,9 @@ const GALLERY_DAYS = (() => {
   })
   return Object.keys(byDay)
     .sort((a, b) => {
+      // 하이라이트 탭은 항상 맨 앞
+      if (a === 'highlight') return -1
+      if (b === 'highlight') return 1
       const na = parseInt(a.replace(/\D/g, ''), 10)
       const nb = parseInt(b.replace(/\D/g, ''), 10)
       if (!isNaN(na) && !isNaN(nb)) return na - nb
@@ -51,7 +59,9 @@ const GALLERY_DAYS = (() => {
     })
     .map((d) => ({
       key: d,
-      label: /^day\d+$/i.test(d) ? 'Day ' + d.replace(/\D/g, '') : d,
+      label: d === 'highlight'
+        ? 'Highlight (Day1-9)'
+        : /^day\d+$/i.test(d) ? 'Day ' + d.replace(/\D/g, '') : d,
       photos: byDay[d],
     }))
 })()
@@ -1832,7 +1842,10 @@ function GalleryPage() {
   )
   const [pw, setPw] = useState('')
   const [err, setErr] = useState('')
-  const [dayIdx, setDayIdx] = useState(Math.max(GALLERY_DAYS.length - 1, 0)) // 기본: 최근 날짜
+  // 기본 탭: 하이라이트가 있으면 맨 앞(하이라이트), 없으면 최근 날짜
+  const [dayIdx, setDayIdx] = useState(
+    GALLERY_DAYS[0]?.key === 'highlight' ? 0 : Math.max(GALLERY_DAYS.length - 1, 0),
+  )
   const [lightbox, setLightbox] = useState(null) // 열린 사진 index
   const [videoLightbox, setVideoLightbox] = useState(null) // 열린 동영상 index
 
@@ -1981,15 +1994,24 @@ function GalleryPage() {
                         onClick={() => setVideoLightbox(i)}
                         className="group relative aspect-square overflow-hidden rounded-2xl bg-black shadow-soft"
                       >
-                        {/* 첫 장면 미리보기 (#t=0.1 로 첫 프레임 표시) */}
-                        <video
-                          src={v.src + '#t=0.1'}
-                          muted
-                          playsInline
-                          preload="metadata"
-                          tabIndex={-1}
-                          className="pointer-events-none h-full w-full object-cover opacity-90 transition group-hover:scale-105"
-                        />
+                        {/* 표지 이미지가 있으면 그걸, 없으면 영상 첫 장면(#t=0.1) 표시 */}
+                        {VIDEO_POSTERS[v.name] ? (
+                          <img
+                            src={VIDEO_POSTERS[v.name]}
+                            alt={v.name.replace(/\.[^.]+$/, '')}
+                            loading="lazy"
+                            className="pointer-events-none h-full w-full object-cover opacity-90 transition group-hover:scale-105"
+                          />
+                        ) : (
+                          <video
+                            src={v.src + '#t=0.1'}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            tabIndex={-1}
+                            className="pointer-events-none h-full w-full object-cover opacity-90 transition group-hover:scale-105"
+                          />
+                        )}
                         {/* 재생 아이콘 */}
                         <span className="absolute inset-0 flex items-center justify-center">
                           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/85 pl-1 text-xl text-april-navy shadow-soft transition group-hover:scale-110">
