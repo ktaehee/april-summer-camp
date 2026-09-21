@@ -1983,52 +1983,99 @@ function GalleryPage() {
 
               {/* 🎬 활동 영상 — 첫 장면 + 이름 썸네일, 클릭하면 크게 재생 */}
               {dayVideos.length > 0 && (
-                <div className="mt-8">
-                  <p className="mb-3 text-center text-sm font-bold text-april-navy">
-                    🎬 활동 영상 ({dayVideos.length}) · 눌러서 재생하세요
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                    {dayVideos.map((v, i) => (
-                      <button
-                        key={v.name}
-                        onClick={() => setVideoLightbox(i)}
-                        className="group relative aspect-square overflow-hidden rounded-2xl bg-black shadow-soft"
-                      >
-                        {/* 표지 이미지가 있으면 그걸, 없으면 영상 첫 장면(#t=0.1) 표시 */}
-                        {VIDEO_POSTERS[v.name] ? (
-                          <img
-                            src={VIDEO_POSTERS[v.name]}
-                            alt={v.name.replace(/\.[^.]+$/, '')}
-                            loading="lazy"
-                            className="pointer-events-none h-full w-full object-cover opacity-90 transition group-hover:scale-105"
-                          />
-                        ) : (
-                          <video
-                            src={v.src + '#t=0.1'}
-                            muted
-                            playsInline
-                            preload="metadata"
-                            tabIndex={-1}
-                            className="pointer-events-none h-full w-full object-cover opacity-90 transition group-hover:scale-105"
-                          />
-                        )}
-                        {/* 재생 아이콘 */}
-                        <span className="absolute inset-0 flex items-center justify-center">
-                          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/85 pl-1 text-xl text-april-navy shadow-soft transition group-hover:scale-110">
-                            ▶
-                          </span>
-                        </span>
-                        {/* 이름 라벨 */}
-                        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6 text-center text-sm font-bold text-white">
-                          {v.name.replace(/\.[^.]+$/, '').replace(/^\d+[_-]?/, '')}
-                        </span>
-                      </button>
-                    ))}
+                GALLERY_DAYS[dayIdx]?.key === 'highlight' ? (
+                  /* 🎬 하이라이트 탭 — 큰 영상 하나 + Day별 소개글 */
+                  <div className="mt-8">
+                    <p className="mb-3 text-center text-sm font-bold text-april-navy">
+                      🎬 2026 여름 캠프 하이라이트 · 눌러서 재생하세요
+                    </p>
+                    <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl bg-black shadow-soft">
+                      <video
+                        src={dayVideos[0].src}
+                        poster={VIDEO_POSTERS[dayVideos[0].name]}
+                        controls
+                        playsInline
+                        preload="none"
+                        className="aspect-video w-full"
+                      />
+                    </div>
+                    {/* Day별 활동 한눈에 보기 */}
+                    <div className="mx-auto mt-8 max-w-4xl">
+                      <p className="mb-3 text-center text-sm font-bold text-april-navy">
+                        📅 Day별 활동 한눈에 보기
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {PROGRAM_DAYS.filter((d) => d.day <= 9).map((d) => (
+                          <div
+                            key={d.day}
+                            className="flex items-start gap-3 rounded-2xl bg-white px-4 py-3 shadow-soft"
+                          >
+                            <span className="text-xl leading-none">{d.icon}</span>
+                            <div>
+                              <p className="text-sm font-bold text-april-navy">
+                                Day {d.day} · {d.theme}
+                                <span className="ml-1 font-semibold text-april-navy-soft">
+                                  — {d.title}
+                                </span>
+                              </p>
+                              <p className="mt-0.5 text-xs leading-relaxed text-april-navy-soft">
+                                {d.desc}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <p className="mt-3 text-center text-xs text-april-navy-soft">
-                    영상 원본은 정리해서 곧 전달드릴 예정이에요
-                  </p>
-                </div>
+                ) : (
+                  /* 일반 날짜 탭 — 썸네일 그리드, 클릭하면 크게 재생 */
+                  <div className="mt-8">
+                    <p className="mb-3 text-center text-sm font-bold text-april-navy">
+                      🎬 활동 영상 ({dayVideos.length}) · 눌러서 재생하세요
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                      {dayVideos.map((v, i) => (
+                        <button
+                          key={v.name}
+                          onClick={() => setVideoLightbox(i)}
+                          className="group relative aspect-square overflow-hidden rounded-2xl bg-black shadow-soft"
+                        >
+                          {/* 표지 이미지가 있으면 그걸, 없으면 영상 첫 장면(#t=0.1) 표시 */}
+                          {VIDEO_POSTERS[v.name] ? (
+                            <img
+                              src={VIDEO_POSTERS[v.name]}
+                              alt={v.name.replace(/\.[^.]+$/, '')}
+                              loading="lazy"
+                              className="pointer-events-none h-full w-full object-cover opacity-90 transition group-hover:scale-105"
+                            />
+                          ) : (
+                            <video
+                              src={v.src + '#t=0.1'}
+                              muted
+                              playsInline
+                              preload="metadata"
+                              tabIndex={-1}
+                              className="pointer-events-none h-full w-full object-cover opacity-90 transition group-hover:scale-105"
+                            />
+                          )}
+                          {/* 재생 아이콘 */}
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/85 pl-1 text-xl text-april-navy shadow-soft transition group-hover:scale-110">
+                              ▶
+                            </span>
+                          </span>
+                          {/* 이름 라벨 */}
+                          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6 text-center text-sm font-bold text-white">
+                            {v.name.replace(/\.[^.]+$/, '').replace(/^\d+[_-]?/, '')}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-center text-xs text-april-navy-soft">
+                      영상 원본은 정리해서 곧 전달드릴 예정이에요
+                    </p>
+                  </div>
+                )
               )}
 
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
