@@ -1998,7 +1998,7 @@ function GalleryPage() {
                         </span>
                         {/* 이름 라벨 */}
                         <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6 text-center text-sm font-bold text-white">
-                          {v.name.replace(/\.[^.]+$/, '')}
+                          {v.name.replace(/\.[^.]+$/, '').replace(/^\d+[_-]?/, '')}
                         </span>
                       </button>
                     ))}
