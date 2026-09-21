@@ -2064,16 +2064,18 @@ function GalleryPage() {
                               ▶
                             </span>
                           </span>
-                          {/* 이름 라벨 */}
-                          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6 text-center text-sm font-bold text-white">
-                            {v.name.replace(/\.[^.]+$/, '').replace(/^\d+[_-]?/, '')}
-                          </span>
+                          {/* 이름 라벨 — 파일명이 숫자만이면(이름표 숨김) 표시 안 함 */}
+                          {(() => {
+                            const lbl = v.name.replace(/\.[^.]+$/, '').replace(/^\d+[_-]?/, '')
+                            return lbl && !/^\d+$/.test(lbl) ? (
+                              <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6 text-center text-sm font-bold text-white">
+                                {lbl}
+                              </span>
+                            ) : null
+                          })()}
                         </button>
                       ))}
                     </div>
-                    <p className="mt-3 text-center text-xs text-april-navy-soft">
-                      영상 원본은 정리해서 곧 전달드릴 예정이에요
-                    </p>
                   </div>
                 )
               )}
