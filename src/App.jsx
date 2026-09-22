@@ -194,6 +194,29 @@ const DAY_REPORTS = {
     ],
     tomorrow: '🏃 Day 6 · Adventure Day — Amazing Race · 주말을 쉬고, 월요일에는 학원 전체를 무대로 영어 미션 투어를 해요. (House 포인트 반영)',
   },
+  day6: {
+    icon: '🏃',
+    theme: 'Adventure Day',
+    title: 'Mission Adventure (Amazing Race)',
+    date: '2026년 8월 10일 (월) · 캠프 여섯째 날',
+    intro:
+      '주말을 보내고 다시 모인 월요일, 학원 전체가 하나의 거대한 게임판이 되었어요. 아이들은 하우스별 팀을 이뤄 층과 교실을 옮겨 다니며, 곳곳에 숨은 미션을 하나씩 해결하는 Mission Adventure(Amazing Race)에 나섰어요.\n\n영어로 된 미션과 힌트를 읽고, 팀원끼리 힘을 모아 다음 장소로 달려가는 내내 교실 밖 복도까지 영어로 북적였어요. 몸으로 뛰며 익히는 영어라, 웃음도 목소리도 가장 컸던 하루예요.',
+    takeaways: [
+      {
+        label: '움직이며 배우는 영어',
+        text: '책상에 앉아서가 아니라, 미션을 찾아 뛰어다니며 영어 지시문을 읽고 바로 행동으로 옮겼어요. 머리와 몸이 함께 기억하는 영어예요.',
+      },
+      {
+        label: '팀으로 푸는 미션',
+        text: '혼자서는 풀기 어려운 미션이 많아, 하우스 팀원끼리 역할을 나누고 서로 이끌고 기다려줬어요.',
+      },
+      {
+        label: '하우스 포인트를 위해',
+        text: '미션 성공이 곧 우리 하우스 점수라, 응원도 작전도 자연스럽게 영어로 터져 나왔어요.',
+      },
+    ],
+    tomorrow: "🎤 Day 7 · Talent Day — April's Got Talent · 노래·댄스 등 준비한 장기를 무대에서 뽐내요. (House 포인트 반영)",
+  },
   day7: {
     icon: '🎤',
     theme: 'Talent Day',
